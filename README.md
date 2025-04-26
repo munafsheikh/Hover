@@ -68,7 +68,6 @@ For advanced settings, click on "Advanced Options" to configure:
 
 - Node.js and npm
 - ImageMagick (for icon conversion)
-- For containerized builds: Podman and Podman Compose
 
 ### Local Setup
 
@@ -87,34 +86,11 @@ npm run dev
 # Production build
 npm run build
 
-# Run tests
-npm test
-
 # Package the extension
 npm run package
 
 # Convert SVG icons to PNG
 npm run convert-icons
-```
-
-### Containerized Build with Podman
-
-The project includes Podman Compose support for building, testing, and packaging the extension in isolated containers.
-
-```bash
-# Make the podman script executable
-chmod +x scripts/podman-run.sh
-
-# Run the complete build pipeline
-./scripts/podman-run.sh pipeline
-
-# Individual commands
-./scripts/podman-run.sh build    # Build the extension
-./scripts/podman-run.sh test     # Run tests
-./scripts/podman-run.sh package  # Package the extension
-./scripts/podman-run.sh icons    # Convert icons
-./scripts/podman-run.sh dev      # Run in development mode
-./scripts/podman-run.sh clean    # Clean up containers
 ```
 
 ## How It Works
@@ -146,6 +122,7 @@ PlantUML diagrams are encoded using the following process:
 - `content.js`: Content script that runs on web pages
 - `popup.html`/`popup.js`: Extension popup UI
 - `options.html`/`options.js`: Advanced options page
+- `lib/plantuml-encoder.min.js`: Third-party library for PlantUML encoding
 
 ## Contributing
 
