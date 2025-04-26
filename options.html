@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hover - Advanced Options</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 0 0 20px 0;
+        text-align: center;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .card h2 {
+        margin-top: 0;
+        font-size: 18px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type='text'],
+      input[type='url'],
+      input[type='number'],
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      textarea {
+        min-height: 100px;
+        font-family: monospace;
+      }
+      .button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .tab-container {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 20px;
+      }
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+        margin-right: 5px;
+      }
+      .tab.active {
+        background-color: #f1f1f1;
+        border-color: #ddd;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .version {
+        text-align: center;
+        color: #666;
+        font-size: 12px;
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Hover - Advanced Options</h1>
+
+      <div class="tab-container">
+        <div class="tab active" data-tab="general">General</div>
+        <div class="tab" data-tab="plantuml">PlantUML</div>
+        <div class="tab" data-tab="chatgpt">ChatGPT</div>
+        <div class="tab" data-tab="custom">Custom API</div>
+      </div>
+
+      <!-- General Settings Tab -->
+      <div id="general" class="tab-content active">
+        <div class="card">
+          <h2>General Settings</h2>
+          <label for="customCSS">Custom CSS for Popup</label>
+          <textarea
+            id="customCSS"
+            placeholder=".hover-extension-popup { /* your styles here */ }"
+          ></textarea>
+
+          <label for="triggerSelector">Custom CSS Selector for Triggers</label>
+          <input
+            type="text"
+            id="triggerSelector"
+            placeholder="pre code, .language-plantuml, .language-svg"
+          />
+
+          <label for="popupWidth">Popup Width (px)</label>
+          <input
+            type="number"
+            id="popupWidth"
+            min="200"
+            max="800"
+            value="400"
+          />
+
+          <label for="popupHeight">Popup Max Height (px)</label>
+          <input
+            type="number"
+            id="popupHeight"
+            min="200"
+            max="800"
+            value="400"
+          />
+        </div>
+      </div>
+
+      <!-- PlantUML Settings Tab -->
+      <div id="plantuml" class="tab-content">
+        <div class="card">
+          <h2>PlantUML Settings</h2>
+          <label for="plantUmlServer">PlantUML Server URL</label>
+          <input
+            type="url"
+            id="plantUmlServer"
+            value="https://www.plantuml.com/plantuml"
+            placeholder="https://www.plantuml.com/plantuml"
+          />
+
+          <label for="plantUmlFormat">Output Format</label>
+          <select id="plantUmlFormat">
+            <option value="svg">SVG (vector)</option>
+            <option value="png">PNG (bitmap)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ChatGPT Settings Tab -->
+      <div id="chatgpt" class="tab-content">
+        <div class="card">
+          <h2>ChatGPT Settings (Coming in Version 2)</h2>
+          <p>This feature will be available in version 2 of the extension.</p>
+
+          <label for="openaiApiKey">OpenAI API Key</label>
+          <input type="text" id="openaiApiKey" placeholder="sk-..." disabled />
+
+          <label for="chatgptModel">ChatGPT Model</label>
+          <select id="chatgptModel" disabled>
+            <option value="gpt-4">GPT-4 (recommended)</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          </select>
+
+          <label for="chatgptPrompt">Default Prompt Template</label>
+          <textarea id="chatgptPrompt" disabled>
+Analyze the following code/diagram: {{CODE}}</textarea
+          >
+        </div>
+      </div>
+
+      <!-- Custom API Settings Tab -->
+      <div id="custom" class="tab-content">
+        <div class="card">
+          <h2>Custom API Settings</h2>
+          <label for="customApiUrl">API Endpoint URL</label>
+          <input
+            type="url"
+            id="customApiUrl"
+            placeholder="https://example.com/api"
+          />
+
+          <label for="customApiMethod">HTTP Method</label>
+          <select id="customApiMethod">
+            <option value="POST">POST</option>
+            <option value="GET">GET</option>
+            <option value="PUT">PUT</option>
+          </select>
+
+          <label for="customApiHeaders">HTTP Headers (JSON)</label>
+          <textarea
+            id="customApiHeaders"
+            placeholder='{"Content-Type": "application/json"}'
+          ></textarea>
+
+          <label for="customApiBody"
+            >Request Body Template (use {{CODE}} as placeholder)</label
+          >
+          <textarea
+            id="customApiBody"
+            placeholder='{"code": "{{CODE}}", "format": "svg"}'
+          ></textarea>
+
+          <label for="customApiResponseType">Response Type</label>
+          <select id="customApiResponseType">
+            <option value="image-url">Image URL in response</option>
+            <option value="json">JSON with image URL field</option>
+            <option value="svg">Direct SVG content</option>
+            <option value="html">HTML content</option>
+          </select>
+
+          <label for="customApiResponseField"
+            >Response Field (for JSON response)</label
+          >
+          <input
+            type="text"
+            id="customApiResponseField"
+            placeholder="data.imageUrl"
+          />
+        </div>
+      </div>
+
+      <button id="saveButton" class="button">Save Settings</button>
+      <button id="resetButton" class="button" style="background-color: #f44336">
+        Reset to Defaults
+      </button>
+
+      <div class="version">
+        <p>Version 1.0.0</p>
+      </div>
+    </div>
+    <script src="options.js"></script>
+  </body>
+</html>
