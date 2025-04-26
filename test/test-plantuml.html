@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>PlantUML Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      pre {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+      h1 {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+      .info {
+        background-color: #e0f0ff;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PlantUML Test Page</h1>
+
+    <div class="info">
+      <p>Hover over the PlantUML code below to test the extension.</p>
+    </div>
+
+    <h2>Electron App Architecture</h2>
+    <pre><code>@startuml
+skinparam componentStyle rectangle
+
+package "Electron App" {
+
+    [Main Process (main.js)] --> [BrowserWindow]
+    [BrowserWindow] --> [Renderer Process (index.html + JS)]
+    [Renderer Process (index.html + JS)] --> [UI Layer (HTML/CSS/JS/React)]
+
+    [Main Process (main.js)] --> [Node.js APIs (Filesystem, OS, etc.)]
+
+    [Renderer Process (index.html + JS)] --> [IPC Renderer]
+    [Main Process (main.js)] --> [IPC Main]
+
+    [IPC Renderer] ..> [IPC Main] : Inter-Process Communication
+}
+@enduml</code></pre>
+
+    <h2>Original Test Diagram</h2>
+    <pre><code>@startuml
+!pragma teoz true
+skinparam responseMessageBelowArrow true
+'autoactivate on
+'skinparam handwritten true
+autonumber
+header api
+footer Page %page% of %lastpage%
+title Title
+
+actor Test as t
+queue RabbitMQ as r
+activate r
+
+t <--\ r: Post message to queue
+
+box #lightgreen
+participant "API1" as a
+activate a
+end box
+
+participant "API2" as a2
+
+activate a2
+{start} r-->a: async doSomething
+a-->a:validations
+'return
+
+a-->a:retrieve somethingelse
+'return
+ 
+a--> a2: post Something
+a2 --> a: documentId
+
+'database "DB" as db
+'a2 <-> db
+'a -> r
+
+note right of t
+Basic flow of api interactions
+end note
+{end} a-> r: somethingR
+deactivate a
+{start} <-> {end} : 3ms
+t <--/ r: expect(sms).toMatchSnapshot()
+'== separator ==
+@enduml</code></pre>
+  </body>
+</html>

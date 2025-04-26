@@ -1,0 +1,50 @@
+{
+    "name": "hover-extension",
+    "version": "1.0.0",
+    "description": "A Chrome extension that provides render-on-hover functionality for image-as-code formats",
+    "main": "background.js",
+    "scripts": {
+        "test": "jest",
+        "build": "npm run convert-icons || npm run placeholder-icons && webpack --mode=production",
+        "dev": "webpack --mode=development --watch",
+        "lint": "eslint .",
+        "package": "node scripts/package.js",
+        "convert-icons": "node scripts/convert-icons.js",
+        "placeholder-icons": "node scripts/generate-placeholder-icons.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/munafsheikh/Hover.git"
+    },
+    "keywords": [
+        "chrome-extension",
+        "plantuml",
+        "svg",
+        "render",
+        "hover",
+        "diagram"
+    ],
+    "author": "Munaf Sheikh",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/munafsheikh/Hover/issues"
+    },
+    "homepage": "https://github.com/munafsheikh/Hover#readme",
+    "devDependencies": {
+        "@babel/core": "^7.20.5",
+        "@babel/preset-env": "^7.20.2",
+        "babel-loader": "^9.1.0",
+        "copy-webpack-plugin": "^11.0.0",
+        "eslint": "^8.29.0",
+        "jest": "^29.3.1",
+        "jest-environment-jsdom": "^29.7.0",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1",
+        "zip-webpack-plugin": "^4.0.1"
+    },
+    "dependencies": {
+        "archiver": "^5.3.1",
+        "hover-extension": "file:",
+        "test": "^3.3.0"
+    }
+}
