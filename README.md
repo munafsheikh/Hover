@@ -15,6 +15,16 @@ A Chrome extension that provides render-on-hover functionality for image-as-code
 - Uses the PlantUML server for rendering PlantUML diagrams
 - Directly renders SVG code
 
+Usage
+
+![Rendering Options](docs/RenderingOptions.png)
+
+![Loaded web page](docs/loaded_webpage.png)
+
+![SVG](docs/svg.png)
+
+![Ascii-Art](docs/asciiart.png)
+
 ### Planned for Version 2
 
 - Send hovered text to ChatGPT or similar AI systems for analysis
@@ -143,8 +153,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 1. Chrome Plugin
 
-> NB: Use at your own risk. Most of this code was "vibe-coded" using CursorAI.
-
-const url = `https://www.plantuml.com/plantuml/png/~1${encoded}`;
-console.log('PlantUML URL:', url);
-return url;
+NB: Use at your own risk. Most of this code was "vibe-coded" using CursorAI.
