@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>PlantUML Test</title>
+    <title>PlantUML Test Page</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 800px;
+        max-width: 1000px;
         margin: 0 auto;
         padding: 20px;
       }
-      pre {
-        background-color: #f5f5f5;
-        padding: 15px;
-        border-radius: 5px;
-        overflow-x: auto;
-      }
-      h1 {
+      h1,
+      h2 {
         border-bottom: 1px solid #eee;
         padding-bottom: 10px;
       }
@@ -26,8 +21,42 @@
         border-radius: 5px;
         margin-bottom: 20px;
       }
+      .example-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 30px;
+        gap: 20px;
+      }
+      pre {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        flex: 1 1 45%;
+        min-width: 300px;
+      }
+      .rendered-diagram {
+        background-color: #ffffff;
+        border: 1px dashed #ccc;
+        padding: 15px;
+        border-radius: 5px;
+        flex: 1 1 45%;
+        min-width: 300px;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #999;
+      }
+      code {
+        white-space: pre-wrap;
+      }
     </style>
+    <!-- <script src="../lib/plantuml-encoder.min.js"></script> -->
+    <script src="../content.js"></script>
   </head>
+
   <body>
     <h1>PlantUML Test Page</h1>
 
@@ -36,8 +65,10 @@
     </div>
 
     <h2>Electron App Architecture</h2>
-    <pre>
-      <code>@startuml
+    <div class="example-container">
+      <pre>
+      <code>
+        @startuml
 skinparam componentStyle rectangle
 
 package "Electron App" {
@@ -56,9 +87,12 @@ package "Electron App" {
 @enduml
   </code>
 </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Sequence Diagram</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
       <code>
       @startuml
         !pragma teoz true
@@ -109,9 +143,12 @@ package "Electron App" {
     @enduml
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Ditaa</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
       <code>
         @startuml
         Alice -> Bob: Hello Bob, how are you?
@@ -125,47 +162,169 @@ package "Electron App" {
         @endditaa
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>DOT</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
-        
-        @startdot
-        digraph G {
-          A -> B
-          B -> C
-        }
-        @enddot
+            @startuml
+            digraph foo {
+              node [style=rounded]
+              node1 [shape=box]
+              node2 [fillcolor=yellow, style="rounded,filled", shape=diamond]
+              node3 [shape=record, label="{ a | b | c }"]
+            
+              node1 -> node2 -> node3
+            }
+            @enduml
+            
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>JCCKIT</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
-        @startjcckit
-        bar_chart "Quarterly Sales"
-        series "Q1": 150
-        series "Q2": 200
-        @endjcckit
+            @startjcckit(600,300)
+            data/curves = curve2 errors2 curve1 errors1
+            data/curve1/title = curve 1
+            data/curve1/x = 0.02 0.11  0.18  0.3   0.42  0.49 0.61
+            data/curve1/y = 0.68 0.61  0.52  0.41  0.27  0.21 0.11
+            data/errors1/x = 0.021 0.01  0.017 0.024 0.023 0.025 0.027
+            data/errors1/y = 0.034 0.028 0.031 0.039 0.03  0.032 0.041
+            data/curve2/title = curve 2
+            data/curve2/x = 0.4   0.5  0.6   0.7   0.8   0.9
+            data/curve2/y = 0.17  0.29 0.45  0.61  0.64  0.66
+            data/errors2/x = 0 0 0 0 0 0
+            data/errors2/y = 0.05 0.036 0.059 0.07 0.061 0.053
+            
+            background = White
+            
+            defaultCoordinateSystem/ticLabelAttributes/fontSize = 0.03
+            defaultCoordinateSystem/axisLabelAttributes/fontSize = 0.04
+            defaultCoordinateSystem/axisLabelAttributes/fontStyle = bold
+            plot/coordinateSystem/xAxis/ = defaultCoordinateSystem/
+            plot/coordinateSystem/xAxis/minimum = 	0.1
+            plot/coordinateSystem/yAxis/ = defaultCoordinateSystem/
+            
+            plot/initialHintForNextCurve/className = jcckit.plot.PositionHint
+            plot/initialHintForNextCurve/origin = 0.06 0.1
+            #plot/initialHintForNextCurve/position = 0 0
+            plot/curveFactory/definitions = cdef1 edef1 cdef2 edef2
+            plot/curveFactory/cdef1/symbolFactory/className = jcckit.plot.ErrorBarFactory
+            plot/curveFactory/edef1/symbolFactory/className = jcckit.plot.ErrorBarFactory
+            plot/curveFactory/edef1/symbolFactory/attributes/className = jcckit.graphic.ShapeAttributes
+            plot/curveFactory/edef1/symbolFactory/attributes/fillColor = 0xcafe
+            plot/curveFactory/edef1/symbolFactory/attributes/lineColor = 0
+            plot/curveFactory/edef1/symbolFactory/size = 0.01
+            plot/curveFactory/edef1/withLine = false
+            plot/curveFactory/edef1/softClipping = false
+            plot/curveFactory/cdef2/symbolFactory/className = jcckit.plot.ErrorBarFactory
+            plot/curveFactory/cdef2/symbolFactory/symbolFactory/className = jcckit.plot.SquareSymbolFactory
+            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/className = jcckit.graphic.ShapeAttributes
+            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/fillColor = 0x40c0
+            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/lineColor = 
+            plot/curveFactory/edef2/ = plot/curveFactory/edef1/
+            plot/curveFactory/edef2/symbolFactory/attributes/fillColor = 
+            plot/curveFactory/edef2/symbolFactory/attributes/lineColor = 0
+            plot/curveFactory/edef2/symbolFactory/size = 0
+            @endjcckit
+            
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>SALT</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
-        @startsalt
-        salt document {
-          window {
-            button "Submit"
-            textbox "Name"
-          }
-        }
-        @endsalt
+            @startsalt
+            {{^==Creole
+              This is **bold**
+              This is //italics//
+              This is ""monospaced""
+              This is --stricken-out--
+              This is __underlined__
+              This is ~~wave-underlined~~
+              --test Unicode and icons--
+              This is <U+221E> long
+              This is a <&code> icon
+              Use image : <img:https://plantuml.com/logo3.png>
+            }|
+            {^<b>HTML Creole 
+             This is <b>bold</b>
+              This is <i>italics</i>
+              This is <font:monospaced>monospaced</font>
+              This is <s>stroked</s>
+              This is <u>underlined</u>
+              This is <w>waved</w>
+              This is <s:green>stroked</s>
+              This is <u:red>underlined</u>
+              This is <w:#0000FF>waved</w>
+              -- other examples --
+              This is <color:blue>Blue</color>
+              This is <back:orange>Orange background</back>
+              This is <size:20>big</size>
+            }|
+            {^Creole line
+            You can have horizontal line
+            ----
+            Or double line
+            ====
+            Or strong line
+            ____
+            Or dotted line
+            ..My title..
+            Or dotted title
+            //and title... //
+            ==Title==
+            Or double-line title
+            --Another title--
+            Or single-line title
+            Enjoy!
+            }|
+            {^Creole list item
+            **test list 1**
+            * Bullet list
+            * Second item
+            ** Sub item
+            *** Sub sub item
+            * Third item
+            ----
+            **test list 2**
+            # Numbered list
+            # Second item
+            ## Sub item
+            ## Another sub item
+            # Third item
+            }|
+            {^Mix on salt
+              ==<color:Blue>Just plain text
+              [This is my default button]
+              [<b><color:green>This is my green button]
+              [ ---<color:#9a9a9a>This is my disabled button-- ]
+              []  <size:20><color:red>Unchecked box
+              [X] <color:green>Checked box
+              "//Enter text here//   "
+              ^This is a droplist^
+              ^<color:#9a9a9a>This is a disabled droplist^
+              ^<b><color:red>This is a red droplist^
+            }}
+            @endsalt
+            
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Mindmap</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startmindmap
         * Root
@@ -175,18 +334,24 @@ package "Electron App" {
         @endmindmap
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Regular Expression</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startregex
         (\d{3})-(\d{2})-(\d{4})
         @endregex
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Gantt</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
 
             @startgantt
             <style>
@@ -271,9 +436,12 @@ package "Electron App" {
             
       
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Chronology</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startchronology
         2025-01-01 : Project Kickoff
@@ -281,9 +449,12 @@ package "Electron App" {
         @endchronology
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Work Breakdown Structure (wbs)</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startwbs
         * Project
@@ -294,9 +465,12 @@ package "Electron App" {
         
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Extended Base Notation Format (ebnf)</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startebnf
         digit  = "0" | "1" | ... | "9" ;
@@ -305,27 +479,38 @@ package "Electron App" {
         
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>JSON</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startjson
         {"name":"Alice","age":28,"city":"Paris"}
         @endjson
       </code>
     </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>YAML</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
           <code>
         @startyaml
         name: Alice
         age: 28
         city: Paris
         @endyaml
-    
-        <h2>EBNF</h2>
-        <pre>
+      </code>
+    </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
+
+    <h2>EBNF</h2>
+    <div class="example-container">
+      <pre>
           <code>
         @startebnf
         title All EBNF elements managed by PlantUML
@@ -357,9 +542,48 @@ without_group = a | b , c;
 
 </code>
 </pre>
+  <div class="rendered-diagram">Diagram will render here</div>
+</div>
 
-    <h2>Original Test Diagram</h2>
-    <pre>
+<h2>NWDiag</h2>
+<div class="example-container">
+  <pre>
+      <code>
+@startuml
+
+nwdiag {
+  group nightly {
+    color = "#FFAAAA";
+    description = "<&clock> Restarted nightly <&clock>";
+    web02;
+    db01;
+  }
+  network dmz {
+      address = "210.x.x.x/24"
+
+      user [description = "<&person*4.5>\n user1"];
+      // set multiple addresses (using comma)
+      web01 [address = "210.x.x.1, 210.x.x.20",  description = "<&cog*4>\nweb01"]
+      web02 [address = "210.x.x.2",  description = "<&cog*4>\nweb02"];
+
+  }
+  network internal {
+      address = "172.x.x.x/24";
+
+      web01 [address = "172.x.x.1"];
+      web02 [address = "172.x.x.2"];
+      db01 [address = "172.x.x.100",  description = "<&spreadsheet*4>\n db01"];
+      db02 [address = "172.x.x.101",  description = "<&spreadsheet*4>\n db02"];
+      ptr  [address = "172.x.x.110",  description = "<&print*4>\n ptr01"];
+  }
+}
+@enduml
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
+
+    <h2>Timing Diagram</h2>
+    <div class="example-container">
+      <pre>
       <code>
 @startuml
 scale 5 as 150 pixels
@@ -424,101 +648,276 @@ db@:write_beg-1 -> addr@:write_end+1 : hold
 
 </code>
 </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
 
     <h2>Original Test Diagram</h2>
-    <pre>
+    <div class="example-container">
+      <pre>
       <code>
-  @startuml
-|#pink|Actor_For_red|
-start
-if (color?) is (red) then
-#pink:**action red**;
-:foo1;
-else (not red)
-|#lightgray|Actor_For_no_red|
-#lightgray:**action not red**;
-:foo2;
-endif
-|Next_Actor|
-#lightblue:foo3;
-:foo4;
-|Final_Actor|
-#palegreen:foo5;
-stop
+@startuml
+  |#pink|Actor_For_red|
+  start
+  if (color?) is (red) then
+  #pink:**action red**;
+  :foo1;
+  else (not red)
+  |#lightgray|Actor_For_no_red|
+  #lightgray:**action not red**;
+  :foo2;
+  endif
+  |Next_Actor|
+  #lightblue:foo3;
+  :foo4;
+  |Final_Actor|
+  #palegreen:foo5;
+  stop
+@enduml
+  </code>
+</pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
+
+    <h2>Class Diagram</h2>
+    <div class="example-container">
+      <pre>
+      <code>
+
+    @startuml
+
+    ' hide the spot
+    ' hide circle
+    
+    ' avoid problems with angled crows feet
+    skinparam linetype ortho
+    
+    entity "User" as e01 {
+      *user_id : number <<generated>>
+      --
+      *name : text
+      description : text
+    }
+    
+    entity "Card" as e02 {
+      *card_id : number <<generated>>
+      sync_enabled: boolean
+      version: number
+      last_sync_version: number
+      --
+      *user_id : number <<FK>>
+      other_details : text
+    }
+    
+    entity "CardHistory" as e05 {
+      *card_history_id : number <<generated>>
+      version : number
+      --
+      *card_id : number <<FK>>
+      other_details : text
+    }
+    
+    entity "CardsAccounts" as e04 {
+      *id : number <<generated>>
+      --
+      card_id : number <<FK>>
+      account_id : number <<FK>>
+      other_details : text
+    }
+    
+    
+    entity "Account" as e03 {
+      *account_id : number <<generated>>
+      --
+      user_id : number <<FK>>
+      other_details : text
+    }
+    
+    entity "Stream" as e06 {
+      *id : number <<generated>>
+      version: number
+      searchingText: string
+      --
+      owner_id : number <<FK>>
+      follower_id : number <<FK>>
+      card_id: number <<FK>>
+      other_details : text
+    }
+    
+    
+    e01 }|..|| e02
+    e01 }|..|| e03
+    
+    e02 }|..|| e05
+    
+    e02 }|..|| e04
+    e03 }|..|| e04
+    
+    e02 }|..|| e06
+    e03 }|..|| e06
+    
+    
+    @enduml
+  </code>
+</pre>
+  <div class="rendered-diagram">Diagram will render here</div>
+</div>
+
+
+
+    <h2>Use Case Diagram</h2>
+    <div class="example-container">
+      <pre>
+      <code>
+
+@startuml
+:Main Admin: as Admin
+(Use the application) as (Use)
+
+User -> (Start)
+User --> (Use)
+
+Admin ---> (Use)
+
+note right of Admin : This is an example.
+
+note right of (Use)
+  A note can also
+  be on several lines
+end note
+
+note "This note is connected\nto several objects." as N2
+(Start) .. N2
+N2 .. (Use)
 @enduml
 </code>
 </pre>
+  <div class="rendered-diagram">Diagram will render here</div>
+</div>
 
 
-  <h2>Archimate</h2>
-  <pre>
+
+    <h2>Archimate</h2>
+    <div class="example-container">
+      <pre>
           <code>
-  @startuml
-  skinparam rectangle<<behavior>> {
-    roundCorner 25
-  }
-  sprite $bProcess jar:archimate/business-process
-  sprite $aService jar:archimate/application-service
-  sprite $aComponent jar:archimate/application-component
-  
-  rectangle "Handle claim"  as HC <<$bProcess>><<behavior>> #Business
-  rectangle "Capture Information"  as CI <<$bProcess>><<behavior>> #Business
-  rectangle "Notify\nAdditional Stakeholders" as NAS <<$bProcess>><<behavior>> #Business
-  rectangle "Validate" as V <<$bProcess>><<behavior>> #Business
-  rectangle "Investigate" as I <<$bProcess>><<behavior>> #Business
-  rectangle "Pay" as P <<$bProcess>><<behavior>> #Business
-  
-  HC *-down- CI
-  HC *-down- NAS
-  HC *-down- V
-  HC *-down- I
-  HC *-down- P
-  
-  CI -right->> NAS
-  NAS -right->> V
-  V -right->> I
-  I -right->> P
-  
-  rectangle "Scanning" as scanning <<$aService>><<behavior>> #Application
-  rectangle "Customer admnistration" as customerAdministration <<$aService>><<behavior>> #Application
-  rectangle "Claims admnistration" as claimsAdministration <<$aService>><<behavior>> #Application
-  rectangle Printing <<$aService>><<behavior>> #Application
-  rectangle Payment <<$aService>><<behavior>> #Application
-  
-  scanning -up-> CI
-  customerAdministration  -up-> CI
-  claimsAdministration -up-> NAS
-  claimsAdministration -up-> V
-  claimsAdministration -up-> I
-  Payment -up-> P
-  
-  Printing -up-> V
-  Printing -up-> P
-  
-  rectangle "Document\nManagement\nSystem" as DMS <<$aComponent>> #Application
-  rectangle "General\nCRM\nSystem" as CRM <<$aComponent>>  #Application
-  rectangle "Home & Away\nPolicy\nAdministration" as HAPA <<$aComponent>> #Application
-  rectangle "Home & Away\nFinancial\nAdministration" as HFPA <<$aComponent>>  #Application
-  
-  DMS .up.|> scanning
-  DMS .up.|> Printing
-  CRM .up.|> customerAdministration
-  HAPA .up.|> claimsAdministration
-  HFPA .up.|> Payment
-  
-  legend left
-  Example from the "Archisurance case study" (OpenGroup).
-  See
-  ====
-  <$bProcess> :business process
-  ====
-  <$aService> : application service
-  ====
-  <$aComponent> : application component
-  endlegend
-  @enduml
-</code>
-</pre>
 
+            @startuml
+            skinparam rectangle&lt;&lt;behavior&gt;&gt; {
+              roundCorner 25
+            }
+            sprite $bProcess jar:archimate/business-process
+            sprite $aService jar:archimate/application-service
+            sprite $aComponent jar:archimate/application-component
+            
+            rectangle "Handle claim"  as HC &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            rectangle "Capture Information"  as CI &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            rectangle "Notify\nAdditional Stakeholders" as NAS &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            rectangle "Validate" as V &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            rectangle "Investigate" as I &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            rectangle "Pay" as P &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
+            
+            HC *-down- CI
+            HC *-down- NAS
+            HC *-down- V
+            HC *-down- I
+            HC *-down- P
+            
+            CI -right-&gt;&gt; NAS
+            NAS -right-&gt;&gt; V
+            V -right-&gt;&gt; I
+            I -right-&gt;&gt; P
+            
+            rectangle "Scanning" as scanning &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
+            rectangle "Customer admnistration" as customerAdministration &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
+            rectangle "Claims admnistration" as claimsAdministration &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
+            rectangle Printing &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
+            rectangle Payment &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
+            
+            scanning -up-&gt; CI
+            customerAdministration  -up-&gt; CI
+            claimsAdministration -up-&gt; NAS
+            claimsAdministration -up-&gt; V
+            claimsAdministration -up-&gt; I
+            Payment -up-&gt; P
+            
+            Printing -up-&gt; V
+            Printing -up-&gt; P
+            
+            rectangle "Document\nManagement\nSystem" as DMS &lt;&lt;$aComponent&gt;&gt; #Application
+            rectangle "General\nCRM\nSystem" as CRM &lt;&lt;$aComponent&gt;&gt;  #Application
+            rectangle "Home & Away\nPolicy\nAdministration" as HAPA &lt;&lt;$aComponent&gt;&gt; #Application
+            rectangle "Home & Away\nFinancial\nAdministration" as HFPA &lt;&lt;$aComponent&gt;&gt;  #Application
+            
+            DMS .up.|&gt; scanning
+            DMS .up.|&gt; Printing
+            CRM .up.|&gt; customerAdministration
+            HAPA .up.|&gt; claimsAdministration
+            HFPA .up.|&gt; Payment
+            
+            legend left
+            Example from the "Archisurance case study" (OpenGroup).
+            See
+            ====
+            &lt;$bProcess&gt; :business process
+            ====
+            &lt;$aService&gt; : application service
+            ====
+            &lt;$aComponent&gt; : application component
+            endlegend
+            @enduml
+
+    </code>
+    </pre>
+      <div class="rendered-diagram">Diagram will render here</div>
+    </div>
+
+    <script>
+      console.error('Initializing');
+      initialize(window, '../lib/plantuml-encoder.min.js');
+
+      window.addEventListener('load', () => {
+        const serverUrl = 'https://www.plantuml.com/plantuml/svg/';
+
+        // Safety: Check if encoder loaded
+        if (!window.plantumlEncoder) {
+          console.error('plantumlEncoder not loaded!');
+          document.querySelectorAll('.rendered-diagram').forEach((div) => {
+            div.textContent = 'Error: PlantUML encoder not available.';
+          });
+          return;
+        }
+
+        document.querySelectorAll('.example-container').forEach((container) => {
+          const codeBlock = container.querySelector('code');
+          const renderDiv = container.querySelector('.rendered-diagram');
+
+          if (codeBlock && renderDiv) {
+            let plantumlSource = codeBlock.textContent.trim();
+
+            // Find the first @start...@end block
+            const diagramMatch = plantumlSource.match(
+              /@start[\s\S]+?@end[a-z]*/i
+            );
+            // if (!diagramMatch) {
+            //   renderDiv.textContent = "No valid PlantUML found.";
+            //   return;
+            // }
+
+            const diagramText = diagramMatch[0];
+            const encoded = window.plantumlEncoder.encode(diagramText);
+            const imageUrl = serverUrl + encoded;
+
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'PlantUML Diagram';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100%';
+
+            renderDiv.innerHTML = '';
+            renderDiv.appendChild(img);
+          }
+        });
+      });
+    </script>
   </body>
 </html>

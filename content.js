@@ -7,25 +7,40 @@ let lastHoverTime = 0;
 const HOVER_DEBOUNCE_TIME = 15000;
 let currentHoverElement = null;
 let popup = null;
+const plantumlLocation = 'lib/plantuml-encoder.min.js'
 
 const PLANTUML_BLOCK_MATCHERS = [
-    { name: "UML", enabled: true, regex: /@startuml(?:.|\n|\r)*?@enduml/gi },
-    { name: "DITAA", enabled: true, regex: /@startditaa(?:.|\n|\r)*?@endditaa/gi },
-    { name: "DOT", enabled: true, regex: /@startdot(?:.|\n|\r)*?@enddot/gi },
-    { name: "JCCKit", enabled: true, regex: /@startjcckit(?:.|\n|\r)*?@endjcckit/gi },
-    { name: "Salt", enabled: true, regex: /@startsalt(?:.|\n|\r)*?@endsalt/gi },
-    { name: "MindMap", enabled: true, regex: /@startmindmap(?:.|\n|\r)*?@endmindmap/gi },
-    { name: "Regex", enabled: true, regex: /@startregex(?:.|\n|\r)*?@endregex/gi },
-    { name: "Gantt", enabled: true, regex: /@startgantt(?:.|\n|\r)*?@endgantt/gi },
-    { name: "Chronology", enabled: true, regex: /@startchronology(?:.|\n|\r)*?@endchronology/gi },
-    { name: "WBS", enabled: true, regex: /@startwbs(?:.|\n|\r)*?@endwbs/gi },
-    { name: "EBNF", enabled: true, regex: /@startebnf(?:.|\n|\r)*?@endebnf/gi },
-    { name: "JSON", enabled: true, regex: /@startjson(?:.|\n|\r)*?@endjson/gi },
-    { name: "YAML", enabled: true, regex: /@startyaml(?:.|\n|\r)*?@endyaml/gi },
+    { name: "UML", enabled: true, regex: /@startuml[\s\S]*?@enduml/gi },
+    { name: "DITAA", enabled: true, regex: /@startditaa[\s\S]*?@endditaa/gi },
+    { name: "DOT", enabled: true, regex: /@startdot[\s\S]*?@enddot/gi },
+    { name: "JCCKit", enabled: true, regex: /@startjcckit[\s\S]*?@endjcckit/gi },
+    { name: "Salt", enabled: true, regex: /@startsalt[\s\S]*?@endsalt/gi },
+    { name: "MindMap", enabled: true, regex: /@startmindmap[\s\S]*?@endmindmap/gi },
+    { name: "Regex", enabled: true, regex: /@startregex[\s\S]*?@endregex/gi },
+    { name: "Gantt", enabled: true, regex: /@startgantt[\s\S]*?@endgantt/gi },
+    { name: "Chronology", enabled: true, regex: /@startchronology[\s\S]*?@endchronology/gi },
+    { name: "WBS", enabled: true, regex: /@startwbs[\s\S]*?@endwbs/gi },
+    { name: "EBNF", enabled: true, regex: /@startebnf[\s\S]*?@endebnf/gi },
+    { name: "JSON", enabled: true, regex: /@startjson[\s\S]*?@endjson/gi },
+    { name: "YAML", enabled: true, regex: /@startyaml[\s\S]*?@endyaml/gi },
+    { name: "SkinParam", enabled: true, regex: /skinparam\s+[\s\S]*?\}/gi },
 ];
 
 
-function loadPlantUMLEncoder() {
+function loadPlantUMLEncoder(doc, lib) {
+    console.error("Libraries: ", { doc, lib });
+    let libLocation = "";
+    if (!lib) {
+        libLocation = plantumlLocation;
+    }
+    else {
+        libLocation = lib;
+    }
+
+    if (doc) {
+        document = doc;
+    }
+
     return new Promise((resolve, reject) => {
         // Check if it's already loaded
         if (window.plantumlEncoder) {
@@ -34,7 +49,9 @@ function loadPlantUMLEncoder() {
         }
 
         const script = document.createElement('script');
-        script.src = chrome.runtime.getURL('lib/plantuml-encoder.min.js');
+        console.log(libLocation);
+        // Use the provided lib path directly in test environment
+        script.src = lib || (chrome.runtime?.getURL ? chrome.runtime.getURL(libLocation) : libLocation);
         script.onload = () => {
             console.log('PlantUML encoder loaded successfully');
             resolve();
@@ -59,7 +76,7 @@ function isSVG(text) {
 
 function encodePlantUML(code) {
     if (!window.plantumlEncoder) throw new Error('Encoder not loaded');
-    return window.plantumlEncoder.encode(code);
+    return window.plantumlEncoder.encode(htmlEscape(code));
 }
 
 function extractPlantUMLBlocks(text) {
@@ -146,6 +163,14 @@ async function renderCode(code, type) {
         contentDiv.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
     }
 }
+function htmlEscape(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 function createPopup() {
     if (popup) return;
@@ -204,18 +229,36 @@ async function handleMouseOver(event) {
     }
 }
 
-async function initialize() {
-    try { await loadPlantUMLEncoder(); } catch (e) { console.warn('Encoder load failed:', e); }
-    document.head.appendChild(Object.assign(document.createElement('style'), { textContent: `.hover-extension-popup { font-family: Arial; font-size: 14px; }` }));
-    createPopup();
-    document.addEventListener('mouseover', handleMouseOver);
-    document.addEventListener('mouseout', (e) => {
-        if (currentHoverElement && !popup.contains(e.relatedTarget)) currentHoverElement = null;
-    });
-    document.addEventListener('click', (e) => {
-        if (popup?.style.display === 'block' && !popup.contains(e.target)) hidePopup();
-    });
-    chrome.runtime.onMessage.addListener((msg, _, res) => { if (msg.action === 'updateSettings') { } res({ success: true }); return true; });
+async function initialize(doc, lib) {
+    try {
+        if (doc || lib) {
+            // Test environment initialization
+            document = doc || document;
+            await loadPlantUMLEncoder(doc, lib);
+        } else {
+            // Production environment initialization
+            await loadPlantUMLEncoder(null, null);
+            document.head.appendChild(Object.assign(document.createElement('style'), {
+                textContent: `.hover-extension-popup { font-family: Arial; font-size: 14px; }`
+            }));
+            createPopup();
+            document.addEventListener('mouseover', handleMouseOver);
+            document.addEventListener('mouseout', (e) => {
+                if (currentHoverElement && !popup.contains(e.relatedTarget)) currentHoverElement = null;
+            });
+            document.addEventListener('click', (e) => {
+                if (popup?.style.display === 'block' && !popup.contains(e.target)) hidePopup();
+            });
+
+            chrome.runtime.onMessage.addListener((msg, _, res) => {
+                if (msg.action === 'updateSettings') { }
+                res({ success: true });
+                return true;
+            });
+        }
+    } catch (err) {
+        console.error('initialize error:', JSON.stringify(err, null, 4));
+    }
 }
 
-initialize();
+initialize(null, null);
