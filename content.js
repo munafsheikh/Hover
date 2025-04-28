@@ -8,6 +8,23 @@ const HOVER_DEBOUNCE_TIME = 15000;
 let currentHoverElement = null;
 let popup = null;
 
+const PLANTUML_BLOCK_MATCHERS = [
+    { name: "UML", enabled: true, regex: /@startuml(?:.|\n|\r)*?@enduml/gi },
+    { name: "DITAA", enabled: true, regex: /@startditaa(?:.|\n|\r)*?@endditaa/gi },
+    { name: "DOT", enabled: true, regex: /@startdot(?:.|\n|\r)*?@enddot/gi },
+    { name: "JCCKit", enabled: true, regex: /@startjcckit(?:.|\n|\r)*?@endjcckit/gi },
+    { name: "Salt", enabled: true, regex: /@startsalt(?:.|\n|\r)*?@endsalt/gi },
+    { name: "MindMap", enabled: true, regex: /@startmindmap(?:.|\n|\r)*?@endmindmap/gi },
+    { name: "Regex", enabled: true, regex: /@startregex(?:.|\n|\r)*?@endregex/gi },
+    { name: "Gantt", enabled: true, regex: /@startgantt(?:.|\n|\r)*?@endgantt/gi },
+    { name: "Chronology", enabled: true, regex: /@startchronology(?:.|\n|\r)*?@endchronology/gi },
+    { name: "WBS", enabled: true, regex: /@startwbs(?:.|\n|\r)*?@endwbs/gi },
+    { name: "EBNF", enabled: true, regex: /@startebnf(?:.|\n|\r)*?@endebnf/gi },
+    { name: "JSON", enabled: true, regex: /@startjson(?:.|\n|\r)*?@endjson/gi },
+    { name: "YAML", enabled: true, regex: /@startyaml(?:.|\n|\r)*?@endyaml/gi },
+];
+
+
 function loadPlantUMLEncoder() {
     return new Promise((resolve, reject) => {
         // Check if it's already loaded
@@ -32,8 +49,7 @@ function loadPlantUMLEncoder() {
 
 function isPlantUML(text) {
     const trimmed = text.trim().toLowerCase();
-    return (trimmed.includes('@startuml') && trimmed.includes('@enduml')) ||
-        (trimmed.includes('start uml') && trimmed.includes('end uml'));
+    return PLANTUML_BLOCK_MATCHERS.some(matcher => matcher.enabled && matcher.regex.test(trimmed));
 }
 
 function isSVG(text) {
@@ -47,9 +63,18 @@ function encodePlantUML(code) {
 }
 
 function extractPlantUMLBlocks(text) {
-    const matches = text.match(/@startuml[\s\S]*?@enduml/gim) || [];
-    return matches.map(code => ({ code, encodedText: encodePlantUML(code) }));
+    const matches = [];
+    PLANTUML_BLOCK_MATCHERS.forEach(matcher => {
+        if (matcher.enabled) {
+            const found = text.match(matcher.regex);
+            if (found) {
+                found.forEach(block => matches.push({ type: matcher.name, code: block.trim(), encodedText: encodePlantUML(block.trim()) }));
+            }
+        }
+    });
+    return matches;
 }
+
 
 function renderPlantUMLInline(blocks, contentDiv) {
     contentDiv.innerHTML = '';

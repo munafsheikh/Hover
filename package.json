@@ -1,6 +1,6 @@
 {
     "name": "hover-extension",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A Chrome extension that provides render-on-hover functionality for image-as-code formats",
     "main": "background.js",
     "scripts": {

@@ -36,7 +36,8 @@
     </div>
 
     <h2>Electron App Architecture</h2>
-    <pre><code>@startuml
+    <pre>
+      <code>@startuml
 skinparam componentStyle rectangle
 
 package "Electron App" {
@@ -52,55 +53,472 @@ package "Electron App" {
 
     [IPC Renderer] ..> [IPC Main] : Inter-Process Communication
 }
-@enduml</code></pre>
+@enduml
+  </code>
+</pre>
+
+    <h2>Sequence Diagram</h2>
+    <pre>
+      <code>
+      @startuml
+        !pragma teoz true
+        skinparam responseMessageBelowArrow true
+        'autoactivate on
+        'skinparam handwritten true
+        autonumber
+        header api
+        footer Page %page% of %lastpage%
+        title Title
+
+        actor Test as t
+        queue RabbitMQ as r
+        activate r
+
+        t <--\ r: Post message to queue
+
+        box #lightgreen
+        participant "API1" as a
+        activate a
+        end box
+
+        participant "API2" as a2
+
+        activate a2
+        {start} r-->a: async doSomething
+        a-->a:validations
+        'return
+
+        a-->a:retrieve somethingelse
+        'return
+        
+        a--> a2: post Something
+        a2 --> a: documentId
+
+        'database "DB" as db
+        'a2 <-> db
+        'a -> r
+
+        note right of t
+        Basic flow of api interactions
+        end note
+        {end} a-> r: somethingR
+        deactivate a
+        {start} <-> {end} : 3ms
+        t <--/ r: expect(sms).toMatchSnapshot()
+        
+    @enduml
+      </code>
+    </pre>
+
+    <h2>Ditaa</h2>
+    <pre>
+      <code>
+        @startuml
+        Alice -> Bob: Hello Bob, how are you?
+        Bob --> Alice: I’m good, thanks!
+        @enduml
+        
+        @startditaa
+        +-------+   +-------+
+        | Hello |-->| World |
+        +-------+   +-------+
+        @endditaa
+      </code>
+    </pre>
+
+    <h2>DOT</h2>
+    <pre>
+          <code>
+        
+        @startdot
+        digraph G {
+          A -> B
+          B -> C
+        }
+        @enddot
+      </code>
+    </pre>
+
+    <h2>JCCKIT</h2>
+    <pre>
+          <code>
+        @startjcckit
+        bar_chart "Quarterly Sales"
+        series "Q1": 150
+        series "Q2": 200
+        @endjcckit
+      </code>
+    </pre>
+
+    <h2>SALT</h2>
+    <pre>
+          <code>
+        @startsalt
+        salt document {
+          window {
+            button "Submit"
+            textbox "Name"
+          }
+        }
+        @endsalt
+      </code>
+    </pre>
+
+    <h2>Mindmap</h2>
+    <pre>
+          <code>
+        @startmindmap
+        * Root
+        ** Branch A
+        *** Leaf A1
+        ** Branch B
+        @endmindmap
+      </code>
+    </pre>
+
+    <h2>Regular Expression</h2>
+    <pre>
+          <code>
+        @startregex
+        (\d{3})-(\d{2})-(\d{4})
+        @endregex
+      </code>
+    </pre>
+
+    <h2>Gantt</h2>
+    <pre>
+
+            @startgantt
+            <style>
+            ganttDiagram {
+              task {
+                FontName Helvetica
+                FontColor red
+                FontSize 18
+                FontStyle bold
+                BackGroundColor GreenYellow
+                LineColor blue
+              }
+              milestone {
+                FontColor blue
+                FontSize 25
+                FontStyle italic
+                BackGroundColor yellow
+                LineColor red
+              }
+              note {
+                FontColor DarkGreen
+                FontSize 10
+                LineColor OrangeRed
+              }
+              arrow {
+                FontName Helvetica
+                FontColor red
+                FontSize 18
+                FontStyle bold
+                BackGroundColor GreenYellow
+                LineColor blue
+                LineStyle 8.0;13.0
+                LineThickness 3.0
+              }
+              separator {
+                BackgroundColor lightGreen
+                LineStyle 8.0;3.0
+                LineColor red
+                LineThickness 1.0
+                FontSize 16
+                FontStyle bold
+                FontColor purple
+                Margin 5
+                Padding 20
+              }
+              timeline {
+                  BackgroundColor Bisque
+              }
+              closed {
+                BackgroundColor pink
+                FontColor red
+              }
+            }
+            </style>
+            Project starts the 2020-12-01
+            
+            [Task1] requires 10 days
+            sunday are closed
+            
+            note bottom
+              memo1 ...
+              memo2 ...
+              explanations1 ...
+              explanations2 ...
+            end note
+            
+            [Task2] requires 20 days
+            [Task2] starts 10 days after [Task1]'s end
+            -- Separator title --
+            [M1] happens on 5 days after [Task1]'s end
+            
+            <style>
+              separator {
+                  LineColor black
+                Margin 0
+                Padding 0
+              }
+            </style>
+            
+            -- end --
+            @endgantt
+            
+      
+    </pre>
+
+    <h2>Chronology</h2>
+    <pre>
+          <code>
+        @startchronology
+        2025-01-01 : Project Kickoff
+        2025-06-01 : Beta Release
+        @endchronology
+      </code>
+    </pre>
+
+    <h2>Work Breakdown Structure (wbs)</h2>
+    <pre>
+          <code>
+        @startwbs
+        * Project
+        ** Phase 1
+        *** Task 1.1
+        ** Phase 2
+        @endwbs
+        
+      </code>
+    </pre>
+
+    <h2>Extended Base Notation Format (ebnf)</h2>
+    <pre>
+          <code>
+        @startebnf
+        digit  = "0" | "1" | ... | "9" ;
+        number = digit, { digit } ;
+        @endebnf
+        
+      </code>
+    </pre>
+
+    <h2>JSON</h2>
+    <pre>
+          <code>
+        @startjson
+        {"name":"Alice","age":28,"city":"Paris"}
+        @endjson
+      </code>
+    </pre>
+
+    <h2>YAML</h2>
+    <pre>
+          <code>
+        @startyaml
+        name: Alice
+        age: 28
+        city: Paris
+        @endyaml
+    
+        <h2>EBNF</h2>
+        <pre>
+          <code>
+        @startebnf
+        title All EBNF elements managed by PlantUML
+
+(* Nodes *)
+litteral = "a";
+special = ? a ?;
+rule = a;
+
+(* Edges *)
+required = a;
+optional = [a];
+
+zero_or_more = {a};
+one_or_more = a, {a};
+one_or_more_ebnf = {a}-;
+
+zero_or_more_with_separator = [a, {',', a}];
+one_or_more_with_separator = a, {',', a};
+zero_or_more_with_terminator = {a, ','};
+one_or_more_with_terminator = a, ',', {a, ','};
+one_or_more_with_terminator_ebnf = {a, ','}-;
+
+alternative = a | b;
+group = (a | b) , c;
+without_group = a | b , c;
+@endebnf
+
+
+</code>
+</pre>
 
     <h2>Original Test Diagram</h2>
-    <pre><code>@startuml
-!pragma teoz true
-skinparam responseMessageBelowArrow true
-'autoactivate on
-'skinparam handwritten true
-autonumber
-header api
-footer Page %page% of %lastpage%
-title Title
+    <pre>
+      <code>
+@startuml
+scale 5 as 150 pixels
 
-actor Test as t
-queue RabbitMQ as r
-activate r
+clock clk with period 1
+binary "enable" as en
+binary "R/W" as rw
+binary "data Valid" as dv
+concise "dataBus" as db
+concise "address bus" as addr
 
-t <--\ r: Post message to queue
+@6 as :write_beg
+@10 as :write_end
 
-box #lightgreen
-participant "API1" as a
-activate a
-end box
+@15 as :read_beg
+@19 as :read_end
 
-participant "API2" as a2
 
-activate a2
-{start} r-->a: async doSomething
-a-->a:validations
-'return
+@0
+en is low
+db is "0x0"
+addr is "0x03f"
+rw is low
+dv is 0
 
-a-->a:retrieve somethingelse
-'return
- 
-a--> a2: post Something
-a2 --> a: documentId
+@:write_beg-3
+ en is high
+@:write_beg-2
+ db is "0xDEADBEEF"
+@:write_beg-1
+dv is 1
+@:write_beg
+rw is high
 
-'database "DB" as db
-'a2 <-> db
-'a -> r
 
-note right of t
-Basic flow of api interactions
-end note
-{end} a-> r: somethingR
-deactivate a
-{start} <-> {end} : 3ms
-t <--/ r: expect(sms).toMatchSnapshot()
-'== separator ==
-@enduml</code></pre>
+@:write_end
+rw is low
+dv is low
+@:write_end+1
+rw is low
+db is "0x0"
+addr is "0x23"
+
+@12
+dv is high
+@13 
+db is "0xFFFF"
+
+@20
+en is low
+dv is low
+@21 
+db is "0x0"
+
+highlight :write_beg to :write_end #Gold:Write
+highlight :read_beg to :read_end #lightBlue:Read
+
+db@:write_beg-1 <-> @:write_end : setup time
+db@:write_beg-1 -> addr@:write_end+1 : hold
+@enduml
+
+
+</code>
+</pre>
+
+    <h2>Original Test Diagram</h2>
+    <pre>
+      <code>
+  @startuml
+|#pink|Actor_For_red|
+start
+if (color?) is (red) then
+#pink:**action red**;
+:foo1;
+else (not red)
+|#lightgray|Actor_For_no_red|
+#lightgray:**action not red**;
+:foo2;
+endif
+|Next_Actor|
+#lightblue:foo3;
+:foo4;
+|Final_Actor|
+#palegreen:foo5;
+stop
+@enduml
+</code>
+</pre>
+
+
+  <h2>Archimate</h2>
+  <pre>
+          <code>
+  @startuml
+  skinparam rectangle<<behavior>> {
+    roundCorner 25
+  }
+  sprite $bProcess jar:archimate/business-process
+  sprite $aService jar:archimate/application-service
+  sprite $aComponent jar:archimate/application-component
+  
+  rectangle "Handle claim"  as HC <<$bProcess>><<behavior>> #Business
+  rectangle "Capture Information"  as CI <<$bProcess>><<behavior>> #Business
+  rectangle "Notify\nAdditional Stakeholders" as NAS <<$bProcess>><<behavior>> #Business
+  rectangle "Validate" as V <<$bProcess>><<behavior>> #Business
+  rectangle "Investigate" as I <<$bProcess>><<behavior>> #Business
+  rectangle "Pay" as P <<$bProcess>><<behavior>> #Business
+  
+  HC *-down- CI
+  HC *-down- NAS
+  HC *-down- V
+  HC *-down- I
+  HC *-down- P
+  
+  CI -right->> NAS
+  NAS -right->> V
+  V -right->> I
+  I -right->> P
+  
+  rectangle "Scanning" as scanning <<$aService>><<behavior>> #Application
+  rectangle "Customer admnistration" as customerAdministration <<$aService>><<behavior>> #Application
+  rectangle "Claims admnistration" as claimsAdministration <<$aService>><<behavior>> #Application
+  rectangle Printing <<$aService>><<behavior>> #Application
+  rectangle Payment <<$aService>><<behavior>> #Application
+  
+  scanning -up-> CI
+  customerAdministration  -up-> CI
+  claimsAdministration -up-> NAS
+  claimsAdministration -up-> V
+  claimsAdministration -up-> I
+  Payment -up-> P
+  
+  Printing -up-> V
+  Printing -up-> P
+  
+  rectangle "Document\nManagement\nSystem" as DMS <<$aComponent>> #Application
+  rectangle "General\nCRM\nSystem" as CRM <<$aComponent>>  #Application
+  rectangle "Home & Away\nPolicy\nAdministration" as HAPA <<$aComponent>> #Application
+  rectangle "Home & Away\nFinancial\nAdministration" as HFPA <<$aComponent>>  #Application
+  
+  DMS .up.|> scanning
+  DMS .up.|> Printing
+  CRM .up.|> customerAdministration
+  HAPA .up.|> claimsAdministration
+  HFPA .up.|> Payment
+  
+  legend left
+  Example from the "Archisurance case study" (OpenGroup).
+  See
+  ====
+  <$bProcess> :business process
+  ====
+  <$aService> : application service
+  ====
+  <$aComponent> : application component
+  endlegend
+  @enduml
+</code>
+</pre>
+
   </body>
 </html>
