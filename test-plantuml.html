@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PlantUML Test Page</title>
+    <script src="dist/stringMatcher.js"></script>
+    <style>
+        .match-result {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .match-type {
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .match-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .match-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>PlantUML Matcher Test</h1>
+    
+    <div id="source-input">
+        <h2>Source Text</h2>
+        <textarea id="source" rows="10" cols="80">
+@startuml
+Alice -> Bob: Hello
+@enduml
+
+Some regular text
+
+@startjson
+{
+    "name": "test",
+    "value": 123
+}
+@endjson 

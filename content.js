@@ -3,33 +3,128 @@
  * Detects when the mouse hovers over code blocks and dynamically renders PlantUML or SVG.
  */
 
-let lastHoverTime = 0;
-const HOVER_DEBOUNCE_TIME = 15000;
+let lastHoverTime = null;
+const HOVER_DEBOUNCE_TIME = 5000;
 let currentHoverElement = null;
 let popup = null;
-const plantumlLocation = 'lib/plantuml-encoder.min.js'
+const plantumlLocation = 'lib/plantuml-encoder.min.js';
 
 const PLANTUML_BLOCK_MATCHERS = [
-    { name: "UML", enabled: true, regex: /@startuml[\s\S]*?@enduml/gi },
-    { name: "DITAA", enabled: true, regex: /@startditaa[\s\S]*?@endditaa/gi },
-    { name: "DOT", enabled: true, regex: /@startdot[\s\S]*?@enddot/gi },
-    { name: "JCCKit", enabled: true, regex: /@startjcckit[\s\S]*?@endjcckit/gi },
-    { name: "Salt", enabled: true, regex: /@startsalt[\s\S]*?@endsalt/gi },
-    { name: "MindMap", enabled: true, regex: /@startmindmap[\s\S]*?@endmindmap/gi },
-    { name: "Regex", enabled: true, regex: /@startregex[\s\S]*?@endregex/gi },
-    { name: "Gantt", enabled: true, regex: /@startgantt[\s\S]*?@endgantt/gi },
-    { name: "Chronology", enabled: true, regex: /@startchronology[\s\S]*?@endchronology/gi },
-    { name: "WBS", enabled: true, regex: /@startwbs[\s\S]*?@endwbs/gi },
-    { name: "EBNF", enabled: true, regex: /@startebnf[\s\S]*?@endebnf/gi },
-    { name: "JSON", enabled: true, regex: /@startjson[\s\S]*?@endjson/gi },
-    { name: "YAML", enabled: true, regex: /@startyaml[\s\S]*?@endyaml/gi },
-    { name: "SkinParam", enabled: true, regex: /skinparam\s+[\s\S]*?\}/gi },
+    { name: 'UML', enabled: true, regex: /@startuml[\s\S]*?@enduml/gi },
+    // { name: 'DITAA', enabled: true, regex: /@startditaa[\s\S]*?@endditaa/gi },
+    { name: 'DOT', enabled: true, regex: /@startdot[\s\S]*?@enddot/gi },
+    // { name: 'JCCKit', enabled: true, regex: /@startjcckit[\s\S]*?@endjcckit/gi },
+    { name: 'Salt', enabled: true, regex: /@startsalt[\s\S]*?@endsalt/gi },
+    { name: 'MindMap', enabled: true, regex: /@startmindmap[\s\S]*?@endmindmap/gi },
+    { name: 'Regex', enabled: true, regex: /@startregex[\s\S]*?@endregex/gi },
+    { name: 'Gantt', enabled: true, regex: /@startgantt[\s\S]*?@endgantt/gi },
+    { name: 'Chronology', enabled: true, regex: /@startchronology[\s\S]*?@endchronology/gi },
+    { name: 'WBS', enabled: true, regex: /@startwbs[\s\S]*?@endwbs/gi },
+    { name: 'EBNF', enabled: true, regex: /@startebnf[\s\S]*?@endebnf/gi },
+    { name: 'JSON', enabled: true, regex: /@startjson[\s\S]*?@endjson/gi },
+    { name: 'YAML', enabled: true, regex: /@startyaml[\s\S]*?@endyaml/gi },
+    { name: 'SkinParam', enabled: true, regex: /skinparam\s+[\s\S]*?\}/gi },
 ];
 
+// Content Type Handler Registry
+const ContentHandlers = {
+    handlers: new Map(),
+
+    register(handler) {
+        this.handlers.set(handler.type, handler);
+    },
+
+    getHandler(content) {
+        for (const handler of this.handlers.values()) {
+            if (handler.canHandle(content)) {
+                return handler;
+            }
+        }
+        return null;
+    }
+};
+
+// Base Handler Class
+class BaseContentHandler {
+    constructor(type) {
+        this.type = type;
+    }
+
+    canHandle(content) { return false; }
+    wrap(content) { return content; }
+    getClassIdentifiers() { return []; }
+}
+
+// PlantUML Handler
+class PlantUMLHandler extends BaseContentHandler {
+    constructor() {
+        super('plantuml');
+        this.blockMatchers = PLANTUML_BLOCK_MATCHERS;
+    }
+
+    canHandle(content) {
+        return this.blockMatchers.some(matcher =>
+            matcher.regex.test(content.trim().toLowerCase())
+        );
+    }
+
+    getClassIdentifiers() {
+        return ['language-plantuml'];
+    }
+
+    wrap(content) {
+        return content; // Already in PlantUML format
+    }
+}
+
+// JSON Handler
+class JsonHandler extends BaseContentHandler {
+    constructor() {
+        super('json');
+    }
+
+    canHandle(content) {
+        try {
+            JSON.parse(content);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    getClassIdentifiers() {
+        return ['language-json'];
+    }
+
+    wrap(content) {
+        const formattedJson = JSON.stringify(JSON.parse(content), null, 2);
+        return `@startjson\n${formattedJson}\n@endjson`;
+    }
+}
+
+// SVG Handler
+class SvgHandler extends BaseContentHandler {
+    constructor() {
+        super('svg');
+    }
+
+    canHandle(content) {
+        const trimmed = content.trim().toLowerCase();
+        return trimmed.startsWith('<svg') && trimmed.includes('</svg>');
+    }
+
+    getClassIdentifiers() {
+        return ['language-svg'];
+    }
+
+    wrap(content) {
+        return content;
+    }
+}
 
 function loadPlantUMLEncoder(doc, lib) {
-    console.error("Libraries: ", { doc, lib });
-    let libLocation = "";
+    // console.info('Libraries: ', { doc: doc ? 'doc' : null, lib: lib ? 'lib' : null });
+    let libLocation = '';
     if (!lib) {
         libLocation = plantumlLocation;
     }
@@ -76,7 +171,7 @@ function isSVG(text) {
 
 function encodePlantUML(code) {
     if (!window.plantumlEncoder) throw new Error('Encoder not loaded');
-    return window.plantumlEncoder.encode(htmlEscape(code));
+    return window.plantumlEncoder.encode(htmlEscape(code.trim()));
 }
 
 function extractPlantUMLBlocks(text) {
@@ -85,7 +180,7 @@ function extractPlantUMLBlocks(text) {
         if (matcher.enabled) {
             const found = text.match(matcher.regex);
             if (found) {
-                found.forEach(block => matches.push({ type: matcher.name, code: block.trim(), encodedText: encodePlantUML(block.trim()) }));
+                found.forEach(block => matches.push({ type: matcher.name, code: block.trim(), encodedText: encodePlantUML(block) }));
             }
         }
     });
@@ -95,8 +190,8 @@ function extractPlantUMLBlocks(text) {
 
 function renderPlantUMLInline(blocks, contentDiv) {
     contentDiv.innerHTML = '';
-    blocks.forEach(({ code, encodedText }) => {
-        const imageUrl = `https://www.plantuml.com/plantuml/png/${encodedText}`;
+    blocks.forEach(({ matcher, code, encodedText }) => {
+        const imageUrl = `https://www.plantuml.com/plantuml/svg/${encodedText}`;
 
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `font-family: monospace; font-size: 12px; white-space: pre-wrap;
@@ -104,21 +199,18 @@ function renderPlantUMLInline(blocks, contentDiv) {
       padding: 10px; margin-bottom: 30px;`;
 
         const title = document.createElement('div');
-        title.textContent = 'PlantUML Diagnostics';
+        title.textContent = 'PlantUML Diagnostics ';
         title.style.cssText = 'font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px';
 
         const codeBlock = document.createElement('div');
-        codeBlock.innerHTML = `<strong>Original Code:</strong><div style="margin:5px 0; color:#333;">${code}</div>`;
+        codeBlock.innerHTML = `Original Code<p><div style="margin:5px 0; color:#333;"><code><pre>${code}</pre></code></div></p>`;
 
         const links = document.createElement('div');
         links.innerHTML = `
-      <strong>Rendering Options:</strong>
-      <div><a href="https://www.plantuml.com/plantuml/png/${encodedText}" target="_blank">Open as PNG</a></div>
-      <div><a href="https://www.plantuml.com/plantuml/svg/${encodedText}" target="_blank">Open as SVG</a></div>
-      <div><a href="https://www.plantuml.com/plantuml/txt/${encodedText}" target="_blank">View as Text</a></div>
-      <div style="margin-top: 10px;"><strong>Download:</strong>
-        <div><a href="${imageUrl}" download="diagram.png">Download PNG</a></div>
-      </div>`;
+      <h2>Rendering Options:</h2>
+      <a href="https://www.plantuml.com/plantuml/png/${encodedText}" target="_blank" download="diagram.png">Open as PNG</a>
+      <a href="https://www.plantuml.com/plantuml/svg/${encodedText}" target="_blank" download="diagram.svg">Open as SVG</a>
+      <a href="https://www.plantuml.com/plantuml/txt/${encodedText}" target="_blank">View as Text</a></div>`;
 
         const img = document.createElement('img');
         img.src = imageUrl;
@@ -132,11 +224,12 @@ function renderPlantUMLInline(blocks, contentDiv) {
         };
 
         wrapper.append(title);
-        wrapper.append(codeBlock);
-        wrapper.append(links);
         wrapper.append(img);
+        wrapper.append(links);
+        wrapper.append(codeBlock);
         contentDiv.append(wrapper);
     });
+    return contentDiv;
 }
 
 function renderSVG(code) {
@@ -146,30 +239,25 @@ function renderSVG(code) {
 async function renderCode(code, type) {
     const contentDiv = popup?.querySelector('.hover-extension-content');
     if (!contentDiv) return;
+
     contentDiv.innerHTML = '<div style="text-align: center;">Loading...</div>';
     try {
-        if (type === 'plantuml') {
-            const blocks = extractPlantUMLBlocks(code);
-            renderPlantUMLInline(blocks, contentDiv);
-        } else if (type === 'svg') {
-            const img = document.createElement('img');
-            img.src = renderSVG(code);
-            img.style.cssText = 'max-width: 100%; height: auto';
-            contentDiv.innerHTML = '';
-            contentDiv.appendChild(img);
-        }
+        const blocks = extractBlocks(code);
+        renderPlantUMLInline(blocks, contentDiv);
     } catch (err) {
-        console.error('Render error:', JSON.stringify(err, null, 4));
+        console.error('Render error:', err);
         contentDiv.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
     }
 }
+
 function htmlEscape(text) {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return text;
+    // return text
+    //     .replace(/&/g, '&amp;')
+    //     .replace(/</g, '&lt;')
+    //     .replace(/>/g, '&gt;')
+    //     .replace(/"/g, '&quot;')
+    //     .replace(/'/g, '&#039;');
 }
 
 function createPopup() {
@@ -206,30 +294,47 @@ function hidePopup() {
 
 async function handleMouseOver(event) {
     const now = Date.now();
-    if (now - lastHoverTime < HOVER_DEBOUNCE_TIME) return;
+    // if (!lastHoverTime) {
+    //     lastHoverTime = 0;
+    // }
+    // if ((now - lastHoverTime) < HOVER_DEBOUNCE_TIME) return;
 
     const target = event.target;
     if (popup?.contains(target)) return;
 
-    let codeText = '', isCode = false;
-    if (['CODE', 'PRE'].includes(target.tagName) || target.classList.contains('language-plantuml') || target.classList.contains('language-svg')) {
+    // Check if element matches any supported type
+    let { codeText, isCode, lastHoverTime, rendered } = await render(target, event);
+}
+
+async function render(target, event) {
+    console.log('render', target, event);
+    let codeText = '';
+    let isCode = false;
+    const supportedClasses = Array.from(ContentHandlers.handlers.values())
+        .flatMap(handler => handler.getClassIdentifiers());
+    if (['CODE', 'PRE'].includes(target.tagName) ||
+        supportedClasses.some(cls => target.classList.contains(cls))) {
+        // console.log('target.tagName', target.tagName);
         codeText = target.textContent;
         isCode = true;
     } else if (target.parentElement && ['CODE', 'PRE'].includes(target.parentElement.tagName)) {
+        // console.log('target.parentElement.tagName', target.parentElement.tagName);
         codeText = target.parentElement.textContent;
         isCode = true;
     }
-
-    if (isCode) {
+    let rendered = [];
+    if (isCode && isRenderable(codeText)) {
+        console.log('isCode && isRenderable(codeText)', isCode, isRenderable(codeText));
         currentHoverElement = target;
-        lastHoverTime = now;
+        lastHoverTime = Date.now();
         showPopup(event.clientX, event.clientY);
-        if (isPlantUML(codeText)) await renderCode(codeText, 'plantuml');
-        else if (isSVG(codeText)) await renderCode(codeText, 'svg');
+        rendered = await renderCode(codeText, 'plantuml');
     }
+    return { codeText, isCode, lastHoverTime, rendered };
 }
 
 async function initialize(doc, lib) {
+    lastHoverTime = 0;
     try {
         if (doc || lib) {
             // Test environment initialization
@@ -242,6 +347,7 @@ async function initialize(doc, lib) {
                 textContent: `.hover-extension-popup { font-family: Arial; font-size: 14px; }`
             }));
             createPopup();
+
             document.addEventListener('mouseover', handleMouseOver);
             document.addEventListener('mouseout', (e) => {
                 if (currentHoverElement && !popup.contains(e.relatedTarget)) currentHoverElement = null;
@@ -259,6 +365,99 @@ async function initialize(doc, lib) {
     } catch (err) {
         console.error('initialize error:', JSON.stringify(err, null, 4));
     }
+}
+
+
+
+// Register handlers
+ContentHandlers.register(new PlantUMLHandler());
+ContentHandlers.register(new JsonHandler());
+ContentHandlers.register(new SvgHandler());
+
+// Modified core functions
+function isRenderable(text) {
+    return ContentHandlers.getHandler(text) !== null;
+}
+
+// Add cache utilities
+const PlantUMLCache = {
+    prefix: 'plantuml_cache_',
+    ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+
+    getKey(content) {
+        // Create a cache key from the content
+        return this.prefix + this.hashString(content);
+    },
+
+    hashString(str) {
+        // Simple hash function for cache keys
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash).toString(36);
+    },
+
+    get(content) {
+        try {
+            const key = this.getKey(content);
+            const cached = localStorage.getItem(key);
+            if (!cached) return null;
+
+            const { value, timestamp } = JSON.parse(cached);
+
+            // Check if cache has expired
+            if (Date.now() - timestamp > this.ttl) {
+                localStorage.removeItem(key);
+                return null;
+            }
+
+            return value;
+        } catch (e) {
+            console.error('Cache read error:', e);
+            return null;
+        }
+    },
+
+    set(content, value) {
+        try {
+            const key = this.getKey(content);
+            const data = {
+                value,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {
+            console.error('Cache write error:', e);
+        }
+    }
+};
+
+function extractBlocks(text) {
+    const handler = ContentHandlers.getHandler(text);
+    if (!handler) return [];
+
+    const wrappedContent = handler.wrap(text);
+
+    // Try to get encoded content from cache
+    // console.log('wrappedContent', wrappedContent);
+    let encodedTextCached = PlantUMLCache.get(wrappedContent);
+    // console.log('encodedTextCached', encodedTextCached);
+
+    // If not in cache, encode and cache it
+    if (!encodedTextCached) {
+        // console.log('encoding');
+        encodedTextCached = encodePlantUML(wrappedContent);
+        PlantUMLCache.set(wrappedContent, encodedTextCached);
+    }
+
+    return [{
+        type: handler.type,
+        code: wrappedContent,
+        encodedText: encodedTextCached
+    }];
 }
 
 initialize(null, null);

@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <title>PlantUML Test Page</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -21,8 +28,24 @@
         border-radius: 5px;
         margin-bottom: 20px;
       }
+      .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+      }
+
+      .copy-btn:hover {
+        background: #388e3c;
+      }
       .example-container {
-        display: flex;
+        /* display: flex; */
         flex-wrap: wrap;
         margin-bottom: 30px;
         gap: 20px;
@@ -52,9 +75,31 @@
       code {
         white-space: pre-wrap;
       }
+      .match-result {
+        margin: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .match-type {
+        font-weight: bold;
+        color: #2196f3;
+      }
+      .match-content {
+        background: #f5f5f5;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+      .match-info {
+        color: #666;
+        font-size: 0.9em;
+      }
     </style>
-    <!-- <script src="../lib/plantuml-encoder.min.js"></script> -->
+    <script src="../lib/plantuml-encoder.min.js"></script>
     <script src="../content.js"></script>
+    <script src="code-blocks.js"></script>
   </head>
 
   <body>
@@ -63,860 +108,71 @@
     <div class="info">
       <p>Hover over the PlantUML code below to test the extension.</p>
     </div>
-
-    <h2>Electron App Architecture</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-        @startuml
-skinparam componentStyle rectangle
-
-package "Electron App" {
-
-    [Main Process (main.js)] --> [BrowserWindow]
-    [BrowserWindow] --> [Renderer Process (index.html + JS)]
-    [Renderer Process (index.html + JS)] --> [UI Layer (HTML/CSS/JS/React)]
-
-    [Main Process (main.js)] --> [Node.js APIs (Filesystem, OS, etc.)]
-
-    [Renderer Process (index.html + JS)] --> [IPC Renderer]
-    [Main Process (main.js)] --> [IPC Main]
-
-    [IPC Renderer] ..> [IPC Main] : Inter-Process Communication
-}
-@enduml
-  </code>
-</pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Sequence Diagram</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-      @startuml
-        !pragma teoz true
-        skinparam responseMessageBelowArrow true
-        'autoactivate on
-        'skinparam handwritten true
-        autonumber
-        header api
-        footer Page %page% of %lastpage%
-        title Title
-
-        actor Test as t
-        queue RabbitMQ as r
-        activate r
-
-        t <--\ r: Post message to queue
-
-        box #lightgreen
-        participant "API1" as a
-        activate a
-        end box
-
-        participant "API2" as a2
-
-        activate a2
-        {start} r-->a: async doSomething
-        a-->a:validations
-        'return
-
-        a-->a:retrieve somethingelse
-        'return
-        
-        a--> a2: post Something
-        a2 --> a: documentId
-
-        'database "DB" as db
-        'a2 <-> db
-        'a -> r
-
-        note right of t
-        Basic flow of api interactions
-        end note
-        {end} a-> r: somethingR
-        deactivate a
-        {start} <-> {end} : 3ms
-        t <--/ r: expect(sms).toMatchSnapshot()
-        
-    @enduml
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Ditaa</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-        @startuml
-        Alice -> Bob: Hello Bob, how are you?
-        Bob --> Alice: I’m good, thanks!
-        @enduml
-        
-        @startditaa
-        +-------+   +-------+
-        | Hello |-->| World |
-        +-------+   +-------+
-        @endditaa
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>DOT</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-            @startuml
-            digraph foo {
-              node [style=rounded]
-              node1 [shape=box]
-              node2 [fillcolor=yellow, style="rounded,filled", shape=diamond]
-              node3 [shape=record, label="{ a | b | c }"]
-            
-              node1 -> node2 -> node3
-            }
-            @enduml
-            
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>JCCKIT</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-            @startjcckit(600,300)
-            data/curves = curve2 errors2 curve1 errors1
-            data/curve1/title = curve 1
-            data/curve1/x = 0.02 0.11  0.18  0.3   0.42  0.49 0.61
-            data/curve1/y = 0.68 0.61  0.52  0.41  0.27  0.21 0.11
-            data/errors1/x = 0.021 0.01  0.017 0.024 0.023 0.025 0.027
-            data/errors1/y = 0.034 0.028 0.031 0.039 0.03  0.032 0.041
-            data/curve2/title = curve 2
-            data/curve2/x = 0.4   0.5  0.6   0.7   0.8   0.9
-            data/curve2/y = 0.17  0.29 0.45  0.61  0.64  0.66
-            data/errors2/x = 0 0 0 0 0 0
-            data/errors2/y = 0.05 0.036 0.059 0.07 0.061 0.053
-            
-            background = White
-            
-            defaultCoordinateSystem/ticLabelAttributes/fontSize = 0.03
-            defaultCoordinateSystem/axisLabelAttributes/fontSize = 0.04
-            defaultCoordinateSystem/axisLabelAttributes/fontStyle = bold
-            plot/coordinateSystem/xAxis/ = defaultCoordinateSystem/
-            plot/coordinateSystem/xAxis/minimum = 	0.1
-            plot/coordinateSystem/yAxis/ = defaultCoordinateSystem/
-            
-            plot/initialHintForNextCurve/className = jcckit.plot.PositionHint
-            plot/initialHintForNextCurve/origin = 0.06 0.1
-            #plot/initialHintForNextCurve/position = 0 0
-            plot/curveFactory/definitions = cdef1 edef1 cdef2 edef2
-            plot/curveFactory/cdef1/symbolFactory/className = jcckit.plot.ErrorBarFactory
-            plot/curveFactory/edef1/symbolFactory/className = jcckit.plot.ErrorBarFactory
-            plot/curveFactory/edef1/symbolFactory/attributes/className = jcckit.graphic.ShapeAttributes
-            plot/curveFactory/edef1/symbolFactory/attributes/fillColor = 0xcafe
-            plot/curveFactory/edef1/symbolFactory/attributes/lineColor = 0
-            plot/curveFactory/edef1/symbolFactory/size = 0.01
-            plot/curveFactory/edef1/withLine = false
-            plot/curveFactory/edef1/softClipping = false
-            plot/curveFactory/cdef2/symbolFactory/className = jcckit.plot.ErrorBarFactory
-            plot/curveFactory/cdef2/symbolFactory/symbolFactory/className = jcckit.plot.SquareSymbolFactory
-            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/className = jcckit.graphic.ShapeAttributes
-            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/fillColor = 0x40c0
-            plot/curveFactory/cdef2/symbolFactory/symbolFactory/attributes/lineColor = 
-            plot/curveFactory/edef2/ = plot/curveFactory/edef1/
-            plot/curveFactory/edef2/symbolFactory/attributes/fillColor = 
-            plot/curveFactory/edef2/symbolFactory/attributes/lineColor = 0
-            plot/curveFactory/edef2/symbolFactory/size = 0
-            @endjcckit
-            
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>SALT</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-            @startsalt
-            {{^==Creole
-              This is **bold**
-              This is //italics//
-              This is ""monospaced""
-              This is --stricken-out--
-              This is __underlined__
-              This is ~~wave-underlined~~
-              --test Unicode and icons--
-              This is <U+221E> long
-              This is a <&code> icon
-              Use image : <img:https://plantuml.com/logo3.png>
-            }|
-            {^<b>HTML Creole 
-             This is <b>bold</b>
-              This is <i>italics</i>
-              This is <font:monospaced>monospaced</font>
-              This is <s>stroked</s>
-              This is <u>underlined</u>
-              This is <w>waved</w>
-              This is <s:green>stroked</s>
-              This is <u:red>underlined</u>
-              This is <w:#0000FF>waved</w>
-              -- other examples --
-              This is <color:blue>Blue</color>
-              This is <back:orange>Orange background</back>
-              This is <size:20>big</size>
-            }|
-            {^Creole line
-            You can have horizontal line
-            ----
-            Or double line
-            ====
-            Or strong line
-            ____
-            Or dotted line
-            ..My title..
-            Or dotted title
-            //and title... //
-            ==Title==
-            Or double-line title
-            --Another title--
-            Or single-line title
-            Enjoy!
-            }|
-            {^Creole list item
-            **test list 1**
-            * Bullet list
-            * Second item
-            ** Sub item
-            *** Sub sub item
-            * Third item
-            ----
-            **test list 2**
-            # Numbered list
-            # Second item
-            ## Sub item
-            ## Another sub item
-            # Third item
-            }|
-            {^Mix on salt
-              ==<color:Blue>Just plain text
-              [This is my default button]
-              [<b><color:green>This is my green button]
-              [ ---<color:#9a9a9a>This is my disabled button-- ]
-              []  <size:20><color:red>Unchecked box
-              [X] <color:green>Checked box
-              "//Enter text here//   "
-              ^This is a droplist^
-              ^<color:#9a9a9a>This is a disabled droplist^
-              ^<b><color:red>This is a red droplist^
-            }}
-            @endsalt
-            
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Mindmap</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startmindmap
-        * Root
-        ** Branch A
-        *** Leaf A1
-        ** Branch B
-        @endmindmap
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Regular Expression</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startregex
-        (\d{3})-(\d{2})-(\d{4})
-        @endregex
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Gantt</h2>
-    <div class="example-container">
-      <pre>
-
-            @startgantt
-            <style>
-            ganttDiagram {
-              task {
-                FontName Helvetica
-                FontColor red
-                FontSize 18
-                FontStyle bold
-                BackGroundColor GreenYellow
-                LineColor blue
-              }
-              milestone {
-                FontColor blue
-                FontSize 25
-                FontStyle italic
-                BackGroundColor yellow
-                LineColor red
-              }
-              note {
-                FontColor DarkGreen
-                FontSize 10
-                LineColor OrangeRed
-              }
-              arrow {
-                FontName Helvetica
-                FontColor red
-                FontSize 18
-                FontStyle bold
-                BackGroundColor GreenYellow
-                LineColor blue
-                LineStyle 8.0;13.0
-                LineThickness 3.0
-              }
-              separator {
-                BackgroundColor lightGreen
-                LineStyle 8.0;3.0
-                LineColor red
-                LineThickness 1.0
-                FontSize 16
-                FontStyle bold
-                FontColor purple
-                Margin 5
-                Padding 20
-              }
-              timeline {
-                  BackgroundColor Bisque
-              }
-              closed {
-                BackgroundColor pink
-                FontColor red
-              }
-            }
-            </style>
-            Project starts the 2020-12-01
-            
-            [Task1] requires 10 days
-            sunday are closed
-            
-            note bottom
-              memo1 ...
-              memo2 ...
-              explanations1 ...
-              explanations2 ...
-            end note
-            
-            [Task2] requires 20 days
-            [Task2] starts 10 days after [Task1]'s end
-            -- Separator title --
-            [M1] happens on 5 days after [Task1]'s end
-            
-            <style>
-              separator {
-                  LineColor black
-                Margin 0
-                Padding 0
-              }
-            </style>
-            
-            -- end --
-            @endgantt
-            
-      
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Chronology</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startchronology
-        2025-01-01 : Project Kickoff
-        2025-06-01 : Beta Release
-        @endchronology
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Work Breakdown Structure (wbs)</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startwbs
-        * Project
-        ** Phase 1
-        *** Task 1.1
-        ** Phase 2
-        @endwbs
-        
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Extended Base Notation Format (ebnf)</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startebnf
-        digit  = "0" | "1" | ... | "9" ;
-        number = digit, { digit } ;
-        @endebnf
-        
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>JSON</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startjson
-        {"name":"Alice","age":28,"city":"Paris"}
-        @endjson
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>YAML</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startyaml
-        name: Alice
-        age: 28
-        city: Paris
-        @endyaml
-      </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>EBNF</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-        @startebnf
-        title All EBNF elements managed by PlantUML
-
-(* Nodes *)
-litteral = "a";
-special = ? a ?;
-rule = a;
-
-(* Edges *)
-required = a;
-optional = [a];
-
-zero_or_more = {a};
-one_or_more = a, {a};
-one_or_more_ebnf = {a}-;
-
-zero_or_more_with_separator = [a, {',', a}];
-one_or_more_with_separator = a, {',', a};
-zero_or_more_with_terminator = {a, ','};
-one_or_more_with_terminator = a, ',', {a, ','};
-one_or_more_with_terminator_ebnf = {a, ','}-;
-
-alternative = a | b;
-group = (a | b) , c;
-without_group = a | b , c;
-@endebnf
-
-
-</code>
-</pre>
-  <div class="rendered-diagram">Diagram will render here</div>
-</div>
-
-<h2>NWDiag</h2>
-<div class="example-container">
-  <pre>
-      <code>
-@startuml
-
-nwdiag {
-  group nightly {
-    color = "#FFAAAA";
-    description = "<&clock> Restarted nightly <&clock>";
-    web02;
-    db01;
-  }
-  network dmz {
-      address = "210.x.x.x/24"
-
-      user [description = "<&person*4.5>\n user1"];
-      // set multiple addresses (using comma)
-      web01 [address = "210.x.x.1, 210.x.x.20",  description = "<&cog*4>\nweb01"]
-      web02 [address = "210.x.x.2",  description = "<&cog*4>\nweb02"];
-
-  }
-  network internal {
-      address = "172.x.x.x/24";
-
-      web01 [address = "172.x.x.1"];
-      web02 [address = "172.x.x.2"];
-      db01 [address = "172.x.x.100",  description = "<&spreadsheet*4>\n db01"];
-      db02 [address = "172.x.x.101",  description = "<&spreadsheet*4>\n db02"];
-      ptr  [address = "172.x.x.110",  description = "<&print*4>\n ptr01"];
-  }
-}
-@enduml
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Timing Diagram</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-@startuml
-scale 5 as 150 pixels
-
-clock clk with period 1
-binary "enable" as en
-binary "R/W" as rw
-binary "data Valid" as dv
-concise "dataBus" as db
-concise "address bus" as addr
-
-@6 as :write_beg
-@10 as :write_end
-
-@15 as :read_beg
-@19 as :read_end
-
-
-@0
-en is low
-db is "0x0"
-addr is "0x03f"
-rw is low
-dv is 0
-
-@:write_beg-3
- en is high
-@:write_beg-2
- db is "0xDEADBEEF"
-@:write_beg-1
-dv is 1
-@:write_beg
-rw is high
-
-
-@:write_end
-rw is low
-dv is low
-@:write_end+1
-rw is low
-db is "0x0"
-addr is "0x23"
-
-@12
-dv is high
-@13 
-db is "0xFFFF"
-
-@20
-en is low
-dv is low
-@21 
-db is "0x0"
-
-highlight :write_beg to :write_end #Gold:Write
-highlight :read_beg to :read_end #lightBlue:Read
-
-db@:write_beg-1 <-> @:write_end : setup time
-db@:write_beg-1 -> addr@:write_end+1 : hold
-@enduml
-
-
-</code>
-</pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Original Test Diagram</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-@startuml
-  |#pink|Actor_For_red|
-  start
-  if (color?) is (red) then
-  #pink:**action red**;
-  :foo1;
-  else (not red)
-  |#lightgray|Actor_For_no_red|
-  #lightgray:**action not red**;
-  :foo2;
-  endif
-  |Next_Actor|
-  #lightblue:foo3;
-  :foo4;
-  |Final_Actor|
-  #palegreen:foo5;
-  stop
-@enduml
-  </code>
-</pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
-
-    <h2>Class Diagram</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-
-    @startuml
-
-    ' hide the spot
-    ' hide circle
-    
-    ' avoid problems with angled crows feet
-    skinparam linetype ortho
-    
-    entity "User" as e01 {
-      *user_id : number <<generated>>
-      --
-      *name : text
-      description : text
-    }
-    
-    entity "Card" as e02 {
-      *card_id : number <<generated>>
-      sync_enabled: boolean
-      version: number
-      last_sync_version: number
-      --
-      *user_id : number <<FK>>
-      other_details : text
-    }
-    
-    entity "CardHistory" as e05 {
-      *card_history_id : number <<generated>>
-      version : number
-      --
-      *card_id : number <<FK>>
-      other_details : text
-    }
-    
-    entity "CardsAccounts" as e04 {
-      *id : number <<generated>>
-      --
-      card_id : number <<FK>>
-      account_id : number <<FK>>
-      other_details : text
-    }
-    
-    
-    entity "Account" as e03 {
-      *account_id : number <<generated>>
-      --
-      user_id : number <<FK>>
-      other_details : text
-    }
-    
-    entity "Stream" as e06 {
-      *id : number <<generated>>
-      version: number
-      searchingText: string
-      --
-      owner_id : number <<FK>>
-      follower_id : number <<FK>>
-      card_id: number <<FK>>
-      other_details : text
-    }
-    
-    
-    e01 }|..|| e02
-    e01 }|..|| e03
-    
-    e02 }|..|| e05
-    
-    e02 }|..|| e04
-    e03 }|..|| e04
-    
-    e02 }|..|| e06
-    e03 }|..|| e06
-    
-    
-    @enduml
-  </code>
-</pre>
-  <div class="rendered-diagram">Diagram will render here</div>
-</div>
-
-
-
-    <h2>Use Case Diagram</h2>
-    <div class="example-container">
-      <pre>
-      <code>
-
-@startuml
-:Main Admin: as Admin
-(Use the application) as (Use)
-
-User -> (Start)
-User --> (Use)
-
-Admin ---> (Use)
-
-note right of Admin : This is an example.
-
-note right of (Use)
-  A note can also
-  be on several lines
-end note
-
-note "This note is connected\nto several objects." as N2
-(Start) .. N2
-N2 .. (Use)
-@enduml
-</code>
-</pre>
-  <div class="rendered-diagram">Diagram will render here</div>
-</div>
-
-
-
-    <h2>Archimate</h2>
-    <div class="example-container">
-      <pre>
-          <code>
-
-            @startuml
-            skinparam rectangle&lt;&lt;behavior&gt;&gt; {
-              roundCorner 25
-            }
-            sprite $bProcess jar:archimate/business-process
-            sprite $aService jar:archimate/application-service
-            sprite $aComponent jar:archimate/application-component
-            
-            rectangle "Handle claim"  as HC &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            rectangle "Capture Information"  as CI &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            rectangle "Notify\nAdditional Stakeholders" as NAS &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            rectangle "Validate" as V &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            rectangle "Investigate" as I &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            rectangle "Pay" as P &lt;&lt;$bProcess&gt;&gt;&lt;&lt;behavior&gt;&gt; #Business
-            
-            HC *-down- CI
-            HC *-down- NAS
-            HC *-down- V
-            HC *-down- I
-            HC *-down- P
-            
-            CI -right-&gt;&gt; NAS
-            NAS -right-&gt;&gt; V
-            V -right-&gt;&gt; I
-            I -right-&gt;&gt; P
-            
-            rectangle "Scanning" as scanning &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
-            rectangle "Customer admnistration" as customerAdministration &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
-            rectangle "Claims admnistration" as claimsAdministration &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
-            rectangle Printing &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
-            rectangle Payment &lt;&lt;$aService&gt;&gt;&lt;&lt;behavior&gt;&gt; #Application
-            
-            scanning -up-&gt; CI
-            customerAdministration  -up-&gt; CI
-            claimsAdministration -up-&gt; NAS
-            claimsAdministration -up-&gt; V
-            claimsAdministration -up-&gt; I
-            Payment -up-&gt; P
-            
-            Printing -up-&gt; V
-            Printing -up-&gt; P
-            
-            rectangle "Document\nManagement\nSystem" as DMS &lt;&lt;$aComponent&gt;&gt; #Application
-            rectangle "General\nCRM\nSystem" as CRM &lt;&lt;$aComponent&gt;&gt;  #Application
-            rectangle "Home & Away\nPolicy\nAdministration" as HAPA &lt;&lt;$aComponent&gt;&gt; #Application
-            rectangle "Home & Away\nFinancial\nAdministration" as HFPA &lt;&lt;$aComponent&gt;&gt;  #Application
-            
-            DMS .up.|&gt; scanning
-            DMS .up.|&gt; Printing
-            CRM .up.|&gt; customerAdministration
-            HAPA .up.|&gt; claimsAdministration
-            HFPA .up.|&gt; Payment
-            
-            legend left
-            Example from the "Archisurance case study" (OpenGroup).
-            See
-            ====
-            &lt;$bProcess&gt; :business process
-            ====
-            &lt;$aService&gt; : application service
-            ====
-            &lt;$aComponent&gt; : application component
-            endlegend
-            @enduml
-
-    </code>
-    </pre>
-      <div class="rendered-diagram">Diagram will render here</div>
-    </div>
+    <div id="body-container"></div>
 
     <script>
-      console.error('Initializing');
+      console.log('Initializing');
+      const serverUrl = [
+        'https://www.plantuml.com/plantuml/svg/',
+        'https://www.plantuml.com/plantuml/png/',
+        'https://www.plantuml.com/plantuml/ascii/',
+      ];
       initialize(window, '../lib/plantuml-encoder.min.js');
 
-      window.addEventListener('load', () => {
-        const serverUrl = 'https://www.plantuml.com/plantuml/svg/';
+      const container = document.getElementById('body-container');
+      CODE_BLOCKS.forEach(async (block) => {
+        // console.log({ block });
+        const exampleContainer = document.createElement('div');
+        exampleContainer.classList.add('example-container');
 
-        // Safety: Check if encoder loaded
-        if (!window.plantumlEncoder) {
-          console.error('plantumlEncoder not loaded!');
-          document.querySelectorAll('.rendered-diagram').forEach((div) => {
-            div.textContent = 'Error: PlantUML encoder not available.';
-          });
-          return;
-        }
+        const h2 = document.createElement('h2');
+        h2.textContent = block.title;
+        exampleContainer.appendChild(h2);
 
-        document.querySelectorAll('.example-container').forEach((container) => {
-          const codeBlock = container.querySelector('code');
-          const renderDiv = container.querySelector('.rendered-diagram');
+        const codeContainer = document.createElement('div');
+        codeContainer.classList.add('code-container');
+        codeContainer.classList.add('code-wrapper');
+        const copyBtn = document.createElement('button');
+        copyBtn.classList.add('copy-btn');
+        copyBtn.textContent = 'Copy Source';
+        copyBtn.onclick = () => {
+          copyToClipboard(this);
+        };
+        codeContainer.appendChild(copyBtn);
+        codeContainer.classList.add('code-container');
+        codeContainer.classList.add('code-wrapper');
+        const code = document.createElement('code');
+        code.classList.add('language-plantuml');
 
-          if (codeBlock && renderDiv) {
-            let plantumlSource = codeBlock.textContent.trim();
+        const pre = document.createElement('pre');
+        pre.appendChild(code);
+        codeContainer.appendChild(pre);
+        // codeContainer.textContent = block.code;
+        exampleContainer.appendChild(codeContainer);
+        code.textContent = block.code;
 
-            // Find the first @start...@end block
-            const diagramMatch = plantumlSource.match(
-              /@start[\s\S]+?@end[a-z]*/i
-            );
-            // if (!diagramMatch) {
-            //   renderDiv.textContent = "No valid PlantUML found.";
-            //   return;
-            // }
+        const diagramContainer = document.createElement('div');
+        diagramContainer.classList.add('diagram-container');
 
-            const diagramText = diagramMatch[0];
-            const encoded = window.plantumlEncoder.encode(diagramText);
-            const imageUrl = serverUrl + encoded;
-
+        const blocks = await extractBlocks(block.code);
+        if (blocks.length === 0) {
+          diagramContainer.textContent = 'Error: No valid PlantUML found.';
+        } else {
+          blocks.forEach((result) => {
+            const imageUrl = serverUrl[0] + result.encodedText;
             const img = document.createElement('img');
             img.src = imageUrl;
-            img.alt = 'PlantUML Diagram';
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '100%';
+            img.alt = result.encodedText;
+            diagramContainer.appendChild(img);
+          });
+        }
+        // exampleContainer.appendChild(diagramContainer);
 
-            renderDiv.innerHTML = '';
-            renderDiv.appendChild(img);
-          }
-        });
+        const linksContainer = document.createElement('div');
+        linksContainer.classList.add('links-container');
+        exampleContainer.appendChild(linksContainer);
+
+        container.appendChild(exampleContainer);
       });
     </script>
   </body>

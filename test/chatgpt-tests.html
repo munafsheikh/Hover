@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PlantUML Viewer with Copy</title>
+    <style>
+      .code-wrapper {
+        position: relative;
+        margin-bottom: 2em;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+      }
+
+      .copy-btn:hover {
+        background: #388e3c;
+      }
+
+      pre {
+        background: #f5f5f5;
+        padding: 1em;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 0.95em;
+        white-space: pre-wrap;
+      }
+
+      .rendered-diagram {
+        border: 1px dashed #ccc;
+        padding: 15px;
+        margin-top: 10px;
+        border-radius: 5px;
+        background-color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder/dist/plantuml-encoder.min.js"></script>
+  </head>
+  <body>
+    <h2>PlantUML Diagram</h2>
+    <div class="code-wrapper">
+      <button class="copy-btn" onclick="copyToClipboard(this)">
+        Copy Source
+      </button>
+      <pre><code class="language-plantuml" id="plantuml-code">
+@startuml
+Alice -> Bob : Hello Bob!
+Bob --> Alice : Hi Alice!
+@enduml
+  </code></pre>
+      <div class="rendered-diagram" id="plantuml-render">
+        Rendering diagram...
+      </div>
+    </div>
+
+    <script>
+      function copyToClipboard(btn) {
+        const code = btn.nextElementSibling.textContent.trim();
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => (btn.textContent = 'Copy Source'), 1500);
+        });
+      }
+
+      window.addEventListener('load', () => {
+        const code = document
+          .getElementById('plantuml-code')
+          .textContent.trim();
+        const encoded = plantumlEncoder.encode(code);
+        const url = 'https://www.plantuml.com/plantuml/svg/' + encoded;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Rendered PlantUML Diagram';
+        img.style.maxWidth = '100%';
+
+        const renderDiv = document.getElementById('plantuml-render');
+        renderDiv.innerHTML = '';
+        renderDiv.appendChild(img);
+      });
+    </script>
+  </body>
+</html>

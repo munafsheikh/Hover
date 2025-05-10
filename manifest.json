@@ -29,7 +29,9 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "lib/*"
+                "lib/plantuml-encoder.min.js",
+                "lib/highlight.min.js",
+                "lib/highlight.min.css"
             ],
             "matches": [
                 "<all_urls>"
