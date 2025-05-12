@@ -317,7 +317,7 @@ async function render(target, event) {
         // console.log('target.tagName', target.tagName);
         codeText = target.textContent;
         isCode = true;
-    } else if (target.parentElement && ['CODE', 'PRE'].includes(target.parentElement.tagName)) {
+    } else if (target.parentElement && ['CODE', 'PRE', 'TEXTAREA'].includes(target.parentElement.tagName)) {
         // console.log('target.parentElement.tagName', target.parentElement.tagName);
         codeText = target.parentElement.textContent;
         isCode = true;

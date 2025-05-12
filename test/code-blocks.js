@@ -1,7 +1,7 @@
 const CODE_BLOCKS = [
-    {
-        title: 'Sequence Diagram',
-        code: `
+  {
+    title: 'Sequence Diagram',
+    code: `
 @startuml
         !pragma teoz true
         skinparam responseMessageBelowArrow true
@@ -50,11 +50,207 @@ const CODE_BLOCKS = [
         
     @enduml
 `
-    }
-    ,
-    {
-        title: 'Plantuml JSON',
-        code: `
+  },
+  {
+    title: 'PlantUML C4 Context Diagram',
+    code: `
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' <<<<< this section could be stored in a separate file and reused in all other diagrams too
+' it defines new default colors, different default sprites and legend 
+!$COLOR_A_5 = "#7f3b08"
+!$COLOR_A_4 = "#b35806"
+!$COLOR_A_3 = "#e08214"
+!$COLOR_A_2 = "#fdb863"
+!$COLOR_A_1 = "#fee0b6"
+!$COLOR_NEUTRAL = "#f7f7f7"
+!$COLOR_B_1 = "#d8daeb"
+!$COLOR_B_2 = "#b2abd2"
+!$COLOR_B_3 = "#8073ac"
+!$COLOR_B_4 = "#542788"
+!$COLOR_B_5 = "#2d004b"
+!$COLOR_REL_LINE = "#8073ac"
+!$COLOR_REL_TEXT = "#8073ac"
+
+UpdateElementStyle("person", $bgColor=$COLOR_A_5, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_A_1, $shadowing="true", $legendText="Internal user")
+UpdateElementStyle("external_person", $bgColor=$COLOR_B_5, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_B_1, $legendText="External user")
+UpdateElementStyle("system", $bgColor=$COLOR_A_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_A_2, $sprite="robot", $legendText="Our chatbot based system")
+UpdateElementStyle("external_system", $bgColor=$COLOR_B_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_B_2, $legendText="External system")
+UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
+' >>>>> end of section
+
+Person(customer, "Personal Banking Customer")
+System(banking_system, "Internet Banking System")
+
+System_Ext(mail_system, "E-mail system")
+System_Ext(mainframe, "Mainframe Banking System")
+
+Rel(customer, banking_system, "Uses")
+Rel_Back(customer, mail_system, "Sends e-mails to")
+Rel_Neighbor(banking_system, mail_system, "Sends e-mails")
+Rel(banking_system, mainframe, "Uses")
+
+SHOW_LEGEND()
+@enduml
+    `
+  },
+  {
+    title: 'OSCIED Charms Relations (Simple)',
+    code: `
+    @startuml
+
+skinparam component {
+    FontColor          black
+    AttributeFontColor black
+    FontSize           17
+    AttributeFontSize  15
+    AttributeFontname  Droid Sans Mono
+    BackgroundColor    #6A9EFF
+    BorderColor        black
+    ArrowColor         #222266
+}
+
+title "OSCIED Charms Relations (Simple)"
+skinparam componentStyle uml2
+
+cloud {
+    interface "JuJu" as juju
+    interface "API" as api
+    interface "Storage" as storage
+    interface "Transform" as transform
+    interface "Publisher" as publisher
+    interface "Website" as website
+
+    juju - [JuJu]
+
+    website - [WebUI]
+    [WebUI] .up.> juju
+    [WebUI] .down.> storage
+    [WebUI] .right.> api
+
+    api - [Orchestra]
+    transform - [Orchestra]
+    publisher - [Orchestra]
+    [Orchestra] .up.> juju
+    [Orchestra] .down.> storage
+
+    [Transform] .up.> juju
+    [Transform] .down.> storage
+    [Transform] ..> transform
+
+    [Publisher] .up.> juju
+    [Publisher] .down.> storage
+    [Publisher] ..> publisher
+
+    storage - [Storage]
+    [Storage] .up.> juju
+}
+
+@enduml
+    `
+  },
+
+  {
+    title: 'Sequence Diagram',
+    code: `
+@startuml
+
+actor Utilisateur as user
+participant "formSign.js" as form <<Contrôleur formulaire>>
+participant "Sign.java" as controler <<(C,#ADD1B2) Contrôleur formulaire>>
+participant "Secure.java" as secure <<(C,#ADD1B2) authentification>>
+participant "Security.java" as security <<(C,#ADD1B2) sécurité>>
+
+box "Application Web" #LightBlue
+	participant form
+end box
+
+box "Serveur Play" #LightGreen
+	participant controler
+	participant secure
+	participant security
+end box
+
+user -> form : submitSignIn()
+form -> form : getParameters()
+form -> form : result = checkFields()
+
+alt result
+
+    form -> controler : formSignIn(email,pwd)
+    controler -> controler : result = checkFields()
+    
+    alt result
+    	controler -> secure : Secure.authenticate(email, pwd, true);
+    	secure -> security : onAuthenticated()
+    	security --> form : renderJSON(0);
+    	form --> user : display main page
+    else !result
+    	controler --> form : renderJSON(1)
+    	form --> user : display error
+    end
+    
+else !result
+	form --> user : display error
+end
+
+@enduml
+    `
+  },
+  {
+    title: 'Sequence Diagram',
+    code: `
+@startuml
+hide footbox
+
+box "Source Endpoint"
+    participant "Flow Control" as FC
+    participant "Data Service" as DS
+end box
+
+box "Sink Endpoint"
+    participant "Data Client" as DC
+    participant "Remote Flow Control" as RFC
+end box
+
+activate FC
+activate RFC
+activate DS
+
+DC <- RFC : start
+activate DC
+
+DS <- DC : connect
+
+DC -> RFC : request registration
+FC <- RFC : {RegistrationRequest}
+
+FC -> DS : call for synchronisation
+activate DS
+DS -> DC : {Sychronisation}
+
+FC --> RFC : {RegistrationRequestAcknowledgement}
+DC <- RFC : registration requested
+
+...
+
+DC --> RFC : confirm synchronisation
+FC <- RFC : {RegistrationSuccess}
+
+DS -> DC : {Sychronisation}
+FC -> DS : stop synchronisation
+deactivate DS
+
+FC --> RFC : {RegistrationSuccessAcknowledgement}
+@enduml
+    `
+  }
+
+
+  , {
+    title: 'Plantuml JSON',
+    code: `
 @startjson
 {
     "name":"Alice",
@@ -79,12 +275,12 @@ const CODE_BLOCKS = [
 
 @endjson
 `
-    }
-    ,
-    {
-        title: 'Raw Json',
-        code:
-            `{
+  }
+  ,
+  {
+    title: 'Raw Json',
+    code:
+      `{
     "name":"Alice",
     "age":28,
     "city":"Paris",
@@ -104,12 +300,12 @@ const CODE_BLOCKS = [
     "skills":["JavaScript","Python","SQL"],
     "hobbies":["Reading","Traveling","Cooking"]
 }`
-    }
-    ,
-    {
-        title: 'DOT',
-        code:
-            ` @startuml
+  }
+  ,
+  {
+    title: 'DOT',
+    code:
+      ` @startuml
             digraph foo {
               node [style=rounded]
               node1 [shape=box]
@@ -119,12 +315,12 @@ const CODE_BLOCKS = [
               node1 -> node2 -> node3
             }
             @enduml`
-    }
-    ,
-    {
-        title: 'SALT',
-        code:
-            `@startsalt
+  }
+  ,
+  {
+    title: 'SALT',
+    code:
+      `@startsalt
             {{^==Creole
               This is **bold**
               This is //italics//
@@ -197,31 +393,31 @@ const CODE_BLOCKS = [
               ^<b><color:red>This is a red droplist^
             }}
             @endsalt`
-    }
-    ,
-    {
-        title: 'Mindmap',
-        code:
-            ` @startmindmap
+  }
+  ,
+  {
+    title: 'Mindmap',
+    code:
+      ` @startmindmap
         * Root
         ** Branch A
         *** Leaf A1
         ** Branch B
         @endmindmap`
-    }
-    ,
-    {
-        title: 'Regular Expression',
-        code:
-            `@startregex
+  }
+  ,
+  {
+    title: 'Regular Expression',
+    code:
+      `@startregex
         (\d{3})-(\d{2})-(\d{4})
         @endregex`
-    }
-    ,
-    {
-        title: 'Gantt',
-        code:
-            `@startgantt
+  }
+  ,
+  {
+    title: 'Gantt',
+    code:
+      `@startgantt
             <style>
             ganttDiagram {
               task {
@@ -301,32 +497,32 @@ const CODE_BLOCKS = [
             
             -- end --
             @endgantt`
-    }
-    ,
-    {
-        title: 'Chronology',
-        code:
-            `@startchronology
+  }
+  ,
+  {
+    title: 'Chronology',
+    code:
+      `@startchronology
         2025-01-01 : Project Kickoff
         2025-06-01 : Beta Release
         @endchronology`
-    }
-    ,
-    {
-        title: 'Work Breakdown Structure (wbs)',
-        code:
-            `@startwbs
+  }
+  ,
+  {
+    title: 'Work Breakdown Structure (wbs)',
+    code:
+      `@startwbs
         * Project
         ** Phase 1
         *** Task 1.1
         ** Phase 2
         @endwbs`
-    }
-    ,
-    {
-        title: 'Extended Base Notation Format (ebnf)',
-        code:
-            `@startebnf
+  }
+  ,
+  {
+    title: 'Extended Base Notation Format (ebnf)',
+    code:
+      `@startebnf
         title All EBNF elements managed by PlantUML
 
 (* Nodes *)
@@ -352,22 +548,22 @@ alternative = a | b;
 group = (a | b) , c;
 without_group = a | b , c;
 @endebnf`
-    }
-    ,
-    {
-        title: 'YAML',
-        code:
-            `@startyaml
+  }
+  ,
+  {
+    title: 'YAML',
+    code:
+      `@startyaml
         name: Alice
         age: 28
         city: Paris
         @endyaml`
-    }
-    ,
-    {
-        title: 'NWDiag',
-        code:
-            `@startuml
+  }
+  ,
+  {
+    title: 'NWDiag',
+    code:
+      `@startuml
 
 nwdiag {
   group nightly {
@@ -396,12 +592,12 @@ nwdiag {
   }
 }
 @enduml`
-    }
-    ,
-    {
-        title: 'Timing Diagram',
-        code:
-            `@startuml
+  }
+  ,
+  {
+    title: 'Timing Diagram',
+    code:
+      `@startuml
 scale 5 as 150 pixels
 
 clock clk with period 1
@@ -460,12 +656,12 @@ highlight :read_beg to :read_end #lightBlue:Read
 db@:write_beg-1 <-> @:write_end : setup time
 db@:write_beg-1 -> addr@:write_end+1 : hold
 @enduml`
-    }
-    ,
-    {
-        title: 'Class Diagram',
-        code:
-            `@startuml
+  }
+  ,
+  {
+    title: 'Class Diagram',
+    code:
+      `@startuml
 
     ' hide the spot
     ' hide circle
@@ -539,11 +735,11 @@ db@:write_beg-1 -> addr@:write_end+1 : hold
     
     
     @enduml`
-    },
-    {
-        title: 'Use Case Diagram',
-        code:
-            `@startuml
+  },
+  {
+    title: 'Use Case Diagram',
+    code:
+      `@startuml
 :Main Admin: as Admin
 (Use the application) as (Use)
 
@@ -563,11 +759,11 @@ note "This note is connected\nto several objects." as N2
 (Start) .. N2
 N2 .. (Use)
 @enduml`
-    },
-    {
-        title: 'Archimate',
-        code:
-            `@startuml
+  },
+  {
+    title: 'Archimate',
+    code:
+      `@startuml
             skinparam rectangle&lt;&lt;behavior&gt;&gt; {
               roundCorner 25
             }
@@ -631,13 +827,13 @@ N2 .. (Use)
             &lt;$aComponent&gt; : application component
             endlegend
             @enduml`
-    },
-    {
-        title: 'Mermaid',
-        code:
-            `@startmermaid
+  },
+  {
+    title: 'Mermaid',
+    code:
+      `@startmermaid
         graph TD
         A --> B
         @endmermaid`
-    }
+  }
 ];
