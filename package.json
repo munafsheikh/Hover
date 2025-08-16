@@ -15,7 +15,8 @@
         "placeholder-icons": "node scripts/generate-placeholder-icons.js",
         "codex:setup": "bash scripts/setup-codex.sh",
         "codex:check": "bash scripts/checks.sh",
-        "codex:package": "bash scripts/build-package.sh"
+        "codex:package": "bash scripts/build-package.sh",
+        "format": "prettier 'src/**/*.{ts,tsx,js,json}' --write"
     },
     "repository": {
         "type": "git",
@@ -39,9 +40,12 @@
         "@babel/core": "^7.20.5",
         "@babel/preset-env": "^7.20.2",
         "@babel/preset-typescript": "^7.20.0",
+        "babel-jest": "^30.0.5",
         "babel-loader": "^9.1.0",
         "copy-webpack-plugin": "^11.0.0",
         "eslint": "^8.29.0",
+        "jest": "^30.0.5",
+        "prettier": "^3.6.2",
         "typescript": "^5.2.2",
         "webpack": "^5.75.0",
         "webpack-cli": "^5.0.1",
