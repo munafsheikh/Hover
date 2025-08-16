@@ -12,7 +12,10 @@
         "version": "node scripts/update-version.js && git add manifest.json",
         "package": "node scripts/package.js",
         "convert-icons": "node scripts/convert-icons.js",
-        "placeholder-icons": "node scripts/generate-placeholder-icons.js"
+        "placeholder-icons": "node scripts/generate-placeholder-icons.js",
+        "codex:setup": "bash scripts/setup-codex.sh",
+        "codex:check": "bash scripts/checks.sh",
+        "codex:package": "bash scripts/build-package.sh"
     },
     "repository": {
         "type": "git",
