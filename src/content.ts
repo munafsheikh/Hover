@@ -5,12 +5,59 @@ class ContentScript {
     private logger: Logger;
     // ... other properties ...
 
+    /**
+     * Cache of generated diagrams keyed by encoded UML text.
+     * Each entry stores the data URL and the time it was cached.
+     */
+    private static diagramCache: Map<string, { dataUrl: string; timestamp: number }> = new Map();
+
+    private static readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
     constructor() {
         this.logger = Logger.getInstance();
         this.popup = new Popup();
         this.registry = ContentHandlerRegistry.getInstance();
         this.logger.info('ContentScript initialized');
         this.registerHandlers();
+    }
+
+    /**
+     * Clear the in-memory diagram cache.
+     */
+    static clearDiagramCache(): void {
+        this.diagramCache.clear();
+    }
+
+    /**
+     * Retrieve a diagram image for the given encoded UML. Uses an in-memory
+     * cache to avoid repeated network requests to the PlantUML server.
+     */
+    private async getDiagramDataUrl(encodedText: string): Promise<string> {
+        const cached = ContentScript.diagramCache.get(encodedText);
+        if (cached && Date.now() - cached.timestamp < ContentScript.CACHE_TTL) {
+            return cached.dataUrl;
+        }
+
+        const url = `https://www.plantuml.com/plantuml/svg/${encodedText}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch diagram: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+
+        ContentScript.diagramCache.set(encodedText, {
+            dataUrl,
+            timestamp: Date.now()
+        });
+
+        return dataUrl;
     }
 
     private async loadPlantUMLEncoder(doc?: Document, lib?: string): Promise<void> {
@@ -127,6 +174,8 @@ class ContentScript {
                         if (msg.action === 'updateSettings') {
                             // Handle settings update
                             await this.handleSettingsUpdate(msg.settings);
+                        } else if (msg.action === 'clearCache') {
+                            ContentScript.clearDiagramCache();
                         }
                         sendResponse({ success: true });
                     } catch (error) {
@@ -168,14 +217,14 @@ class ContentScript {
                     margin-bottom: 30px;
                 `;
 
-                const imageUrl = `https://www.plantuml.com/plantuml/svg/${block.encodedText}`;
-                this.logger.debug('Generated image URL:', imageUrl);
-                
+                const imgSrc = await this.getDiagramDataUrl(block.encodedText);
+                this.logger.debug('Using diagram source:', imgSrc.substring(0, 50));
+
                 wrapper.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px">
                         PlantUML Preview
                     </div>
-                    <img src="${imageUrl}" style="max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 15px">
+                    <img src="${imgSrc}" style="max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 15px">
                     <pre><code class="language-text">${this.htmlEscape(block.code)}</code></pre>
                 `;
 
