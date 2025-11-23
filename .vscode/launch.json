@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🧩 Debug Hover Extension",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/src",
+      "runtimeArgs": [
+        "--load-extension=${workspaceFolder}/dist",
+        "--auto-open-devtools-for-tabs"
+      ]
+    },
+    {
+      "name": "🧩 Attach to Chrome",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src"
+    }
+  ]
+}
