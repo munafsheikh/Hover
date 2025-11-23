@@ -29,6 +29,7 @@ const customApiResponseFieldInput = document.getElementById('customApiResponseFi
 // DOM Elements - Buttons
 const saveButton = document.getElementById('saveButton');
 const resetButton = document.getElementById('resetButton');
+const clearCacheButton = document.getElementById('clearCacheButton');
 
 // Default Advanced Settings
 const DEFAULT_ADVANCED_SETTINGS = {
@@ -219,4 +220,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs();
 });
 saveButton.addEventListener('click', saveAdvancedSettings);
+resetButton.addEventListener('click', resetSettings);
+clearCacheButton?.addEventListener('click', () => {
+    chrome.tabs.query({}, (tabs) => {
+        tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { action: 'clearCache' }).catch(() => {
+                // Ignore errors for inactive tabs
+            });
+        });
+    });
+    showMessage('Diagram cache cleared', 'success');
+});
 resetButton.addEventListener('click', resetSettings); 
