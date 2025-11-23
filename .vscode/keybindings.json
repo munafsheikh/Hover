@@ -1,0 +1,26 @@
+[
+  {
+    "key": "ctrl+alt+s",
+    "command": "workbench.action.tasks.runTask",
+    "args": "🛠 Setup Project"
+  },
+  {
+    "key": "ctrl+alt+d",
+    "command": "workbench.action.tasks.runTask",
+    "args": "▶️ Run Dev Server"
+  },
+  {
+    "key": "ctrl+alt+c",
+    "command": "workbench.action.tasks.runTask",
+    "args": "✅ Run Checks"
+  },
+  {
+    "key": "ctrl+alt+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "📦 Build & Package"
+  },
+  {
+    "key": "f5",
+    "command": "workbench.action.debug.start"
+  }
+]
