@@ -231,3 +231,4 @@ clearCacheButton?.addEventListener('click', () => {
     });
     showMessage('Diagram cache cleared', 'success');
 });
+resetButton.addEventListener('click', resetSettings); 
