@@ -8,11 +8,10 @@
     "vscode": {
       "extensions": [
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "ms-vscode.vscode-typescript-next"
+        "esbenp.prettier-vscode"
       ]
     }
   },
-  "postCreateCommand": "npm ci && npm run codex:setup",
+  "postCreateCommand": "npm ci && npm run dev:setup",
   "remoteUser": "node"
 }

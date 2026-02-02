@@ -68,9 +68,17 @@ For advanced settings, click on "Advanced Options" to configure:
 
 - Custom CSS for the popup
 - Customize selectors for code detection
-- Configure PlantUML server URL
+- Configure PlantUML server URL (supports local servers)
 - Set up custom API parameters (coming in future versions)
 - Configure ChatGPT integration (coming in future versions)
+
+### Local PlantUML Server
+
+For better privacy and performance, you can run PlantUML locally instead of using the public server. See [LOCAL_PLANTUML_SETUP.md](LOCAL_PLANTUML_SETUP.md) for detailed instructions on setting up:
+- Docker PlantUML Server (recommended)
+- Java PlantUML Server
+- Node.js alternatives
+- Kroki multi-diagram server
 
 ## Development
 
@@ -150,7 +158,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 > Because image-as-code formats are almost native to markdown and html now, and it's just annoying that mermaid is rendered, but plantuml isn't.
-
-1. Chrome Plugin
-
-NB: Use at your own risk. Most of this code was "vibe-coded" using CursorAI.

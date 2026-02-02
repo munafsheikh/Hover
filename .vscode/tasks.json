@@ -4,7 +4,7 @@
     {
       "label": "🛠 Setup Project",
       "type": "shell",
-      "command": "npm run codex:setup",
+      "command": "npm run dev:setup",
       "group": "build"
     },
     {
@@ -17,13 +17,13 @@
     {
       "label": "✅ Run Checks",
       "type": "shell",
-      "command": "npm run codex:check",
+      "command": "npm run dev:check",
       "group": "test"
     },
     {
       "label": "📦 Build & Package",
       "type": "shell",
-      "command": "npm run codex:package",
+      "command": "npm run dev:package",
       "group": "build"
     },
     {

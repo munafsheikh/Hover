@@ -5,7 +5,7 @@ const ZipPlugin = require('zip-webpack-plugin');
 module.exports = {
     entry: {
         background: './src/background.js',
-        content: './src/content.ts',
+        content: './src/content.js',
         popup: './src/popup.js',
         options: './src/options.js',
     },
@@ -13,22 +13,23 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].js',
     },
+    devtool: 'cheap-module-source-map',
     module: {
         rules: [
             {
-                test: /\.[tj]s$/,
+                test: /\.js$/,
                 exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: ['@babel/preset-env', '@babel/preset-typescript'],
+                        presets: ['@babel/preset-env'],
                     },
                 },
             },
         ],
     },
     resolve: {
-        extensions: ['.ts', '.js'],
+        extensions: ['.js'],
     },
     plugins: [
         new CopyPlugin({
