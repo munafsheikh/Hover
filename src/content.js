@@ -40,7 +40,9 @@ class ContentScript {
         }
 
         // Get PlantUML server URL and format from settings
-        const serverUrl = this.advancedSettings?.plantuml?.server || 'https://www.plantuml.com/plantuml';
+        const serverUrl =
+            this.advancedSettings?.plantuml?.server ||
+            'https://www.plantuml.com/plantuml';
         const format = this.advancedSettings?.plantuml?.format || 'svg';
 
         // Construct URL with configurable server
@@ -136,18 +138,26 @@ class ContentScript {
             return;
         }
 
-        let codeText = '', isCode = false;
+        let codeText = '',
+            isCode = false;
 
         // Check if element matches any supported type
-        if (['CODE', 'PRE'].includes(target.tagName) ||
-            this.registry.getAllClassIdentifiers().some(cls => target.classList.contains(cls))) {
+        if (
+            ['CODE', 'PRE'].includes(target.tagName) ||
+            this.registry
+                .getAllClassIdentifiers()
+                .some((cls) => target.classList.contains(cls))
+        ) {
             codeText = target.textContent || '';
             isCode = true;
             this.logger.debug('Found code element:', {
                 tagName: target.tagName,
                 classes: target.classList.toString()
             });
-        } else if (target.parentElement && ['CODE', 'PRE'].includes(target.parentElement.tagName)) {
+        } else if (
+            target.parentElement &&
+            ['CODE', 'PRE'].includes(target.parentElement.tagName)
+        ) {
             codeText = target.parentElement.textContent || '';
             isCode = true;
             this.logger.debug('Found code in parent element');
@@ -176,29 +186,38 @@ class ContentScript {
             document.addEventListener('click', this.handleClick);
 
             // Handle extension messages with proper response
-            chrome.runtime?.onMessage?.addListener((msg, sender, sendResponse) => {
-                this.logger.debug('Received message:', msg);
+            chrome.runtime?.onMessage?.addListener(
+                (msg, sender, sendResponse) => {
+                    this.logger.debug('Received message:', msg);
 
-                // Handle the message asynchronously
-                (async () => {
-                    try {
-                        if (msg.action === 'updateSettings') {
-                            // Handle settings update
-                            await this.handleSettingsUpdate(msg.settings);
-                        } else if (msg.action === 'updateAdvancedSettings') {
-                            await this.handleAdvancedSettingsUpdate(msg.advancedSettings);
-                        } else if (msg.action === 'clearCache') {
-                            ContentScript.clearDiagramCache();
+                    // Handle the message asynchronously
+                    (async () => {
+                        try {
+                            if (msg.action === 'updateSettings') {
+                                // Handle settings update
+                                await this.handleSettingsUpdate(msg.settings);
+                            } else if (
+                                msg.action === 'updateAdvancedSettings'
+                            ) {
+                                await this.handleAdvancedSettingsUpdate(
+                                    msg.advancedSettings
+                                );
+                            } else if (msg.action === 'clearCache') {
+                                ContentScript.clearDiagramCache();
+                            }
+                            sendResponse({ success: true });
+                        } catch (error) {
+                            this.logger.error('Error handling message:', error);
+                            sendResponse({
+                                success: false,
+                                error: error.message
+                            });
                         }
-                        sendResponse({ success: true });
-                    } catch (error) {
-                        this.logger.error('Error handling message:', error);
-                        sendResponse({ success: false, error: error.message });
-                    }
-                })();
+                    })();
 
-                return true; // Indicate we will send response asynchronously
-            });
+                    return true; // Indicate we will send response asynchronously
+                }
+            );
 
             this.logger.info('ContentScript initialization complete');
         } catch (err) {
@@ -209,12 +228,18 @@ class ContentScript {
 
     async loadSettings() {
         return new Promise((resolve) => {
-            chrome.storage.sync.get(['settings', 'advancedSettings'], (data) => {
-                this.settings = data.settings || {};
-                this.advancedSettings = data.advancedSettings || {};
-                this.logger.info('Settings loaded:', { settings: this.settings, advancedSettings: this.advancedSettings });
-                resolve();
-            });
+            chrome.storage.sync.get(
+                ['settings', 'advancedSettings'],
+                (data) => {
+                    this.settings = data.settings || {};
+                    this.advancedSettings = data.advancedSettings || {};
+                    this.logger.info('Settings loaded:', {
+                        settings: this.settings,
+                        advancedSettings: this.advancedSettings
+                    });
+                    resolve();
+                }
+            );
         });
     }
 
@@ -249,7 +274,10 @@ class ContentScript {
                 `;
 
                 const imgSrc = await this.getDiagramDataUrl(block.encodedText);
-                this.logger.debug('Using diagram source:', imgSrc.substring(0, 50));
+                this.logger.debug(
+                    'Using diagram source:',
+                    imgSrc.substring(0, 50)
+                );
 
                 wrapper.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px">
@@ -264,10 +292,12 @@ class ContentScript {
                     img.onerror = (e) => {
                         this.logger.error('Image load error:', e);
                         img.style.display = 'none';
-                        wrapper.appendChild(Object.assign(document.createElement('div'), {
-                            textContent: 'Failed to load diagram',
-                            style: 'color: red'
-                        }));
+                        wrapper.appendChild(
+                            Object.assign(document.createElement('div'), {
+                                textContent: 'Failed to load diagram',
+                                style: 'color: red'
+                            })
+                        );
                     };
                 }
 
@@ -283,26 +313,31 @@ class ContentScript {
         this.logger.debug('Extracting blocks from text');
         const matches = StringMatcher.findMatches(text);
 
-        return matches.map(match => {
-            const handler = this.registry.getHandler(match.content);
-            if (!handler) {
-                this.logger.debug(`No handler found for type: ${match.type}`);
-                return null;
-            }
+        return matches
+            .map((match) => {
+                const handler = this.registry.getHandler(match.content);
+                if (!handler) {
+                    this.logger.debug(
+                        `No handler found for type: ${match.type}`
+                    );
+                    return null;
+                }
 
-            const wrappedContent = handler.wrap(match.content);
-            const encodedText = PlantUMLCache.get(wrappedContent) ||
-                this.encodePlantUML(wrappedContent);
+                const wrappedContent = handler.wrap(match.content);
+                const encodedText =
+                    PlantUMLCache.get(wrappedContent) ||
+                    this.encodePlantUML(wrappedContent);
 
-            if (!PlantUMLCache.get(wrappedContent)) {
-                PlantUMLCache.set(wrappedContent, encodedText);
-            }
+                if (!PlantUMLCache.get(wrappedContent)) {
+                    PlantUMLCache.set(wrappedContent, encodedText);
+                }
 
-            return {
-                type: match.type,
-                code: wrappedContent,
-                encodedText
-            };
-        }).filter(block => block !== null);
+                return {
+                    type: match.type,
+                    code: wrappedContent,
+                    encodedText
+                };
+            })
+            .filter((block) => block !== null);
     }
 }

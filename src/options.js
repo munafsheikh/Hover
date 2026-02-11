@@ -23,8 +23,12 @@ const customApiUrlInput = document.getElementById('customApiUrl');
 const customApiMethodSelect = document.getElementById('customApiMethod');
 const customApiHeadersTextarea = document.getElementById('customApiHeaders');
 const customApiBodyTextarea = document.getElementById('customApiBody');
-const customApiResponseTypeSelect = document.getElementById('customApiResponseType');
-const customApiResponseFieldInput = document.getElementById('customApiResponseField');
+const customApiResponseTypeSelect = document.getElementById(
+    'customApiResponseType'
+);
+const customApiResponseFieldInput = document.getElementById(
+    'customApiResponseField'
+);
 
 // DOM Elements - Buttons
 const saveButton = document.getElementById('saveButton');
@@ -37,16 +41,16 @@ const DEFAULT_ADVANCED_SETTINGS = {
         customCSS: '',
         triggerSelector: 'pre code, .language-plantuml, .language-svg',
         popupWidth: 400,
-        popupHeight: 400,
+        popupHeight: 400
     },
     plantuml: {
         server: 'https://www.plantuml.com/plantuml',
-        format: 'svg',
+        format: 'svg'
     },
     chatgpt: {
         apiKey: '',
         model: 'gpt-4',
-        promptTemplate: 'Analyze the following code/diagram: {{CODE}}',
+        promptTemplate: 'Analyze the following code/diagram: {{CODE}}'
     },
     customApi: {
         url: '',
@@ -54,25 +58,36 @@ const DEFAULT_ADVANCED_SETTINGS = {
         headers: '{"Content-Type": "application/json"}',
         bodyTemplate: '{"code": "{{CODE}}", "format": "svg"}',
         responseType: 'image-url',
-        responseField: 'data.imageUrl',
-    },
+        responseField: 'data.imageUrl'
+    }
 };
 
 // Initialize options page with current settings
 function initOptions() {
     chrome.storage.sync.get(['settings', 'advancedSettings'], (data) => {
         const settings = data.settings || {};
-        const advancedSettings = data.advancedSettings || DEFAULT_ADVANCED_SETTINGS;
+        const advancedSettings =
+            data.advancedSettings || DEFAULT_ADVANCED_SETTINGS;
 
         // Fill General settings
         customCSSTextarea.value = advancedSettings.general.customCSS || '';
-        triggerSelectorInput.value = advancedSettings.general.triggerSelector || DEFAULT_ADVANCED_SETTINGS.general.triggerSelector;
-        popupWidthInput.value = advancedSettings.general.popupWidth || DEFAULT_ADVANCED_SETTINGS.general.popupWidth;
-        popupHeightInput.value = advancedSettings.general.popupHeight || DEFAULT_ADVANCED_SETTINGS.general.popupHeight;
+        triggerSelectorInput.value =
+            advancedSettings.general.triggerSelector ||
+            DEFAULT_ADVANCED_SETTINGS.general.triggerSelector;
+        popupWidthInput.value =
+            advancedSettings.general.popupWidth ||
+            DEFAULT_ADVANCED_SETTINGS.general.popupWidth;
+        popupHeightInput.value =
+            advancedSettings.general.popupHeight ||
+            DEFAULT_ADVANCED_SETTINGS.general.popupHeight;
 
         // Fill PlantUML settings
-        plantUmlServerInput.value = advancedSettings.plantuml.server || DEFAULT_ADVANCED_SETTINGS.plantuml.server;
-        plantUmlFormatSelect.value = advancedSettings.plantuml.format || DEFAULT_ADVANCED_SETTINGS.plantuml.format;
+        plantUmlServerInput.value =
+            advancedSettings.plantuml.server ||
+            DEFAULT_ADVANCED_SETTINGS.plantuml.server;
+        plantUmlFormatSelect.value =
+            advancedSettings.plantuml.format ||
+            DEFAULT_ADVANCED_SETTINGS.plantuml.format;
 
         // Fill ChatGPT settings (disabled in version 1)
         // openaiApiKeyInput.value = advancedSettings.chatgpt.apiKey || '';
@@ -81,11 +96,21 @@ function initOptions() {
 
         // Fill Custom API settings
         customApiUrlInput.value = advancedSettings.customApi.url || '';
-        customApiMethodSelect.value = advancedSettings.customApi.method || DEFAULT_ADVANCED_SETTINGS.customApi.method;
-        customApiHeadersTextarea.value = advancedSettings.customApi.headers || DEFAULT_ADVANCED_SETTINGS.customApi.headers;
-        customApiBodyTextarea.value = advancedSettings.customApi.bodyTemplate || DEFAULT_ADVANCED_SETTINGS.customApi.bodyTemplate;
-        customApiResponseTypeSelect.value = advancedSettings.customApi.responseType || DEFAULT_ADVANCED_SETTINGS.customApi.responseType;
-        customApiResponseFieldInput.value = advancedSettings.customApi.responseField || DEFAULT_ADVANCED_SETTINGS.customApi.responseField;
+        customApiMethodSelect.value =
+            advancedSettings.customApi.method ||
+            DEFAULT_ADVANCED_SETTINGS.customApi.method;
+        customApiHeadersTextarea.value =
+            advancedSettings.customApi.headers ||
+            DEFAULT_ADVANCED_SETTINGS.customApi.headers;
+        customApiBodyTextarea.value =
+            advancedSettings.customApi.bodyTemplate ||
+            DEFAULT_ADVANCED_SETTINGS.customApi.bodyTemplate;
+        customApiResponseTypeSelect.value =
+            advancedSettings.customApi.responseType ||
+            DEFAULT_ADVANCED_SETTINGS.customApi.responseType;
+        customApiResponseFieldInput.value =
+            advancedSettings.customApi.responseField ||
+            DEFAULT_ADVANCED_SETTINGS.customApi.responseField;
     });
 }
 
@@ -102,16 +127,17 @@ function saveAdvancedSettings() {
                     customCSS: customCSSTextarea.value,
                     triggerSelector: triggerSelectorInput.value,
                     popupWidth: Number(popupWidthInput.value),
-                    popupHeight: Number(popupHeightInput.value),
+                    popupHeight: Number(popupHeightInput.value)
                 },
                 plantuml: {
                     server: plantUmlServerInput.value,
-                    format: plantUmlFormatSelect.value,
+                    format: plantUmlFormatSelect.value
                 },
                 chatgpt: {
                     apiKey: '', // Disabled in version 1
                     model: 'gpt-4',
-                    promptTemplate: 'Analyze the following code/diagram: {{CODE}}',
+                    promptTemplate:
+                        'Analyze the following code/diagram: {{CODE}}'
                 },
                 customApi: {
                     url: customApiUrlInput.value,
@@ -119,8 +145,8 @@ function saveAdvancedSettings() {
                     headers: customApiHeadersTextarea.value,
                     bodyTemplate: customApiBodyTextarea.value,
                     responseType: customApiResponseTypeSelect.value,
-                    responseField: customApiResponseFieldInput.value,
-                },
+                    responseField: customApiResponseFieldInput.value
+                }
             };
 
             // Save to storage
@@ -129,13 +155,15 @@ function saveAdvancedSettings() {
 
                 // Notify tabs about the update
                 chrome.tabs.query({}, (tabs) => {
-                    tabs.forEach(tab => {
-                        chrome.tabs.sendMessage(tab.id, {
-                            action: 'updateAdvancedSettings',
-                            advancedSettings
-                        }).catch(() => {
-                            // Ignoring errors for inactive tabs
-                        });
+                    tabs.forEach((tab) => {
+                        chrome.tabs
+                            .sendMessage(tab.id, {
+                                action: 'updateAdvancedSettings',
+                                advancedSettings
+                            })
+                            .catch(() => {
+                                // Ignoring errors for inactive tabs
+                            });
                     });
                 });
             });
@@ -148,12 +176,15 @@ function saveAdvancedSettings() {
 // Reset to default settings
 function resetSettings() {
     if (confirm('Are you sure you want to reset all settings to defaults?')) {
-        chrome.storage.sync.set({
-            advancedSettings: DEFAULT_ADVANCED_SETTINGS
-        }, () => {
-            initOptions();
-            showMessage('Settings have been reset to defaults', 'success');
-        });
+        chrome.storage.sync.set(
+            {
+                advancedSettings: DEFAULT_ADVANCED_SETTINGS
+            },
+            () => {
+                initOptions();
+                showMessage('Settings have been reset to defaults', 'success');
+            }
+        );
     }
 }
 
@@ -200,11 +231,13 @@ function setupTabs() {
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    tabs.forEach(tab => {
+    tabs.forEach((tab) => {
         tab.addEventListener('click', () => {
             // Deactivate all tabs
-            tabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+            tabs.forEach((t) => t.classList.remove('active'));
+            tabContents.forEach((content) =>
+                content.classList.remove('active')
+            );
 
             // Activate clicked tab
             tab.classList.add('active');
@@ -223,12 +256,14 @@ saveButton.addEventListener('click', saveAdvancedSettings);
 resetButton.addEventListener('click', resetSettings);
 clearCacheButton?.addEventListener('click', () => {
     chrome.tabs.query({}, (tabs) => {
-        tabs.forEach(tab => {
-            chrome.tabs.sendMessage(tab.id, { action: 'clearCache' }).catch(() => {
-                // Ignore errors for inactive tabs
-            });
+        tabs.forEach((tab) => {
+            chrome.tabs
+                .sendMessage(tab.id, { action: 'clearCache' })
+                .catch(() => {
+                    // Ignore errors for inactive tabs
+                });
         });
     });
     showMessage('Diagram cache cleared', 'success');
 });
-resetButton.addEventListener('click', resetSettings); 
+resetButton.addEventListener('click', resetSettings);
