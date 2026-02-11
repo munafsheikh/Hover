@@ -33,9 +33,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.storage.sync.set({ settings: message.settings }, () => {
             // Notify all active tabs about settings change
             chrome.tabs.query({}, (tabs) => {
-                tabs.forEach(tab => {
-                    chrome.tabs.sendMessage(tab.id, { action: 'updateSettings', settings: message.settings })
-                        .catch(error => console.log(`Could not update tab ${tab.id}: ${error}`));
+                tabs.forEach((tab) => {
+                    chrome.tabs
+                        .sendMessage(tab.id, {
+                            action: 'updateSettings',
+                            settings: message.settings
+                        })
+                        .catch((error) =>
+                            console.log(
+                                `Could not update tab ${tab.id}: ${error}`
+                            )
+                        );
                 });
             });
             sendResponse({ success: true });
@@ -46,14 +54,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'sendToChatGPT') {
         // Handle sending content to ChatGPT API
         // This will be implemented in version 2
-        sendResponse({ success: false, message: 'ChatGPT integration not implemented yet' });
+        sendResponse({
+            success: false,
+            message: 'ChatGPT integration not implemented yet'
+        });
         return true;
     }
 
     if (message.action === 'sendToCustomService') {
         // Handle sending content to a custom API
         // This will be implemented based on settings
-        sendResponse({ success: false, message: 'Custom service integration not implemented yet' });
+        sendResponse({
+            success: false,
+            message: 'Custom service integration not implemented yet'
+        });
         return true;
     }
 });
@@ -62,4 +76,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.action.onClicked.addListener((tab) => {
     // Open the options page when icon is clicked
     chrome.runtime.openOptionsPage();
-}); 
+});

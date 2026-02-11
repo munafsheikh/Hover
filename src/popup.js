@@ -38,12 +38,14 @@ function saveSettings() {
         renderService: renderServiceSelect.value
     };
 
-    chrome.runtime.sendMessage({ action: 'saveSettings', settings }, ({ success }) => {
-        if (success) {
-            // Show success message
-            const message = document.createElement('div');
-            message.textContent = 'Settings saved!';
-            message.style.cssText = `
+    chrome.runtime.sendMessage(
+        { action: 'saveSettings', settings },
+        ({ success }) => {
+            if (success) {
+                // Show success message
+                const message = document.createElement('div');
+                message.textContent = 'Settings saved!';
+                message.style.cssText = `
         background-color: #4CAF50;
         color: white;
         padding: 10px;
@@ -51,14 +53,15 @@ function saveSettings() {
         margin-top: 10px;
         border-radius: 4px;
       `;
-            document.querySelector('.container').appendChild(message);
+                document.querySelector('.container').appendChild(message);
 
-            // Remove message after 2 seconds
-            setTimeout(() => {
-                message.remove();
-            }, 2000);
+                // Remove message after 2 seconds
+                setTimeout(() => {
+                    message.remove();
+                }, 2000);
+            }
         }
-    });
+    );
 }
 
 // Toggle the enabled state of options
@@ -78,4 +81,6 @@ function openOptionsPage() {
 document.addEventListener('DOMContentLoaded', initPopup);
 saveButton.addEventListener('click', saveSettings);
 optionsButton.addEventListener('click', openOptionsPage);
-enabledToggle.addEventListener('change', () => toggleOptionsState(enabledToggle.checked)); 
+enabledToggle.addEventListener('change', () =>
+    toggleOptionsState(enabledToggle.checked)
+);

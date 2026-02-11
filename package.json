@@ -15,6 +15,9 @@
         "dev:setup": "bash scripts/setup-dev.sh",
         "dev:check": "bash scripts/checks.sh",
         "dev:package": "bash scripts/build-package.sh",
+        "codex:setup": "bash scripts/setup-dev.sh",
+        "codex:check": "bash scripts/checks.sh",
+        "codex:package": "bash scripts/build-package.sh",
         "format": "prettier 'src/**/*.{js,json}' --write"
     },
     "repository": {

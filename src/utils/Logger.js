@@ -1,6 +1,6 @@
 export class Logger {
     static instance;
-    DEBUG = true;  // Toggle this for production
+    DEBUG = true; // Toggle this for production
 
     constructor() {}
 

@@ -1,5 +1,3 @@
-import { BaseContentHandler } from '../handlers/BaseContentHandler';
-
 export class ContentHandlerRegistry {
     static instance;
     handlers;
@@ -29,7 +27,8 @@ export class ContentHandlerRegistry {
     }
 
     getAllClassIdentifiers() {
-        return Array.from(this.handlers.values())
-            .flatMap(handler => handler.getClassIdentifiers());
+        return Array.from(this.handlers.values()).flatMap((handler) =>
+            handler.getClassIdentifiers()
+        );
     }
 }

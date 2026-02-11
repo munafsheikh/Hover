@@ -28,7 +28,9 @@ export class StringMatcher {
 
         while (currentIndex < source.length) {
             const remainingText = source.slice(currentIndex);
-            const startMatch = remainingText.match(this.PATTERNS.PLANTUML.START);
+            const startMatch = remainingText.match(
+                this.PATTERNS.PLANTUML.START
+            );
 
             if (!startMatch) break;
 
@@ -41,7 +43,11 @@ export class StringMatcher {
 
             if (!endMatch) break;
 
-            const endIndex = startIndex + startMatch[0].length + endMatch.index + endMatch[0].length;
+            const endIndex =
+                startIndex +
+                startMatch[0].length +
+                endMatch.index +
+                endMatch[0].length;
             const content = source.slice(startIndex, endIndex);
 
             results.push({
@@ -63,7 +69,9 @@ export class StringMatcher {
 
         while (currentIndex < source.length) {
             const remainingText = source.slice(currentIndex);
-            const startMatch = remainingText.match(this.PATTERNS.CODE_BLOCK.START);
+            const startMatch = remainingText.match(
+                this.PATTERNS.CODE_BLOCK.START
+            );
 
             if (!startMatch) break;
 
@@ -76,7 +84,11 @@ export class StringMatcher {
 
             if (!endMatch) break;
 
-            const endIndex = startIndex + startMatch[0].length + endMatch.index + endMatch[0].length;
+            const endIndex =
+                startIndex +
+                startMatch[0].length +
+                endMatch.index +
+                endMatch[0].length;
             const content = source.slice(startIndex, endIndex);
 
             results.push({
