@@ -4,7 +4,7 @@
  */
 
 let lastHoverTime = null;
-const HOVER_DEBOUNCE_TIME = 5000;
+const HOVER_DEBOUNCE_TIME = 15000;
 let currentHoverElement = null;
 let popup = null;
 const plantumlLocation = 'lib/plantuml-encoder.min.js';
@@ -171,7 +171,11 @@ function isSVG(text) {
 
 function encodePlantUML(code) {
     if (!window.plantumlEncoder) throw new Error('Encoder not loaded');
-    return window.plantumlEncoder.encode(htmlEscape(code.trim()));
+    console.log(`Pre-Encoded Plantuml Image: ${code}`);
+    const tmp = window.plantumlEncoder.encode(htmlEscape(code.trim()));
+    console.log(`Encoded Plantuml Image: ${tmp}`);
+    return tmp;
+    
 }
 
 function extractPlantUMLBlocks(text) {
