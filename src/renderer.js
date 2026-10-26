@@ -20,7 +20,7 @@ function trace(...parts) {
         .slice(0, 500);
     window.parent.postMessage({ log: line }, '*');
 }
-for (const level of ['log', 'warn', 'error']) {
+for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
     const original = console[level].bind(console);
     console[level] = (...parts) => {
         original(...parts);
