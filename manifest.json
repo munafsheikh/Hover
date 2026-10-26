@@ -3,6 +3,7 @@
     "name": "Hover - Image Code Renderer",
     "version": "1.0.0",
     "description": "Auto-renders image-as-code blocks (PlantUML, SVG) on hover",
+    "minimum_chrome_version": "116",
     "permissions": [
         "activeTab",
         "storage",

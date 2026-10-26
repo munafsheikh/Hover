@@ -1,6 +1,6 @@
 # Hover
 
-A Chrome extension that provides render-on-hover functionality for image-as-code formats like PlantUML and SVG.
+A Chrome and Microsoft Edge extension that provides render-on-hover functionality for image-as-code formats like PlantUML and SVG.
 
 ## Features
 
@@ -41,12 +41,17 @@ Usage
 
 ### Manual Installation (Developer Mode)
 
-1. Clone this repository or download as a ZIP file
-2. Extract the files if needed
-3. Open Chrome and go to `chrome://extensions/`
-4. Enable "Developer mode" in the top-right corner
-5. Click "Load unpacked" and select the extension folder
-6. The extension should now be installed and active
+Supported: Chrome 116+ and Microsoft Edge 116+ (same build works in both).
+
+1. Clone this repository, then `npm install && npm run build`
+2. Open the extensions page:
+   - Chrome: `chrome://extensions/`
+   - Edge: `edge://extensions/`
+3. Enable "Developer mode" (Chrome: top-right; Edge: left sidebar)
+4. Click "Load unpacked" and select the `dist/` folder
+5. The extension should now be installed and active
+
+`dist/hover-extension.zip` can be uploaded to both the Chrome Web Store and Microsoft Edge Add-ons (Partner Center).
 
 ## Usage
 

@@ -5,7 +5,12 @@
  * intercepted, and with --stub-cheerpj the CheerpJ CDN is replaced by a
  * local fake so the plantuml.js path can be exercised offline.
  *
- * Usage: node scripts/e2e-smoke.js [distDir] [--stub-cheerpj]
+ * Usage: node scripts/e2e-smoke.js [distDir] [--stub-cheerpj] [--executable=<path>]
+ *   [--channel=<name>]
+ *   --channel: Playwright browser channel, e.g. msedge or chrome
+ *   --executable: path to another Chromium-based browser, e.g.
+ *                 /opt/microsoft/msedge/msedge
+ *   Defaults to Playwright's bundled Chromium.
  * Requires: playwright (not a project dependency)
  */
 const fs = require('fs');
@@ -17,6 +22,12 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const stubCheerpj = args.includes('--stub-cheerpj');
+const executable = args
+    .find((a) => a.startsWith('--executable='))
+    ?.slice('--executable='.length);
+const channel =
+    args.find((a) => a.startsWith('--channel='))?.slice('--channel='.length) ||
+    'chromium';
 const distDir = path.resolve(
     args.find((a) => !a.startsWith('--')) || path.join(root, 'dist')
 );
@@ -71,9 +82,12 @@ async function main() {
 
     const ctx = await chromium.launchPersistentContext('', {
         headless: true,
-        channel: 'chromium',
+        ...(executable ? { executablePath: executable } : { channel }),
         args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`]
     });
+    console.log(
+        `Browser: ${ctx.browser()?.version() || executable || channel}`
+    );
 
     const serverHits = [];
     await ctx.route('https://www.plantuml.com/**', (route) => {
