@@ -67,3 +67,73 @@ class MemoryStorage {
 for (const name of ['localStorage', 'sessionStorage']) {
     if (storageDenied(name)) define(name, new MemoryStorage());
 }
+
+const requestKey = (request) =>
+    typeof request === 'string' ? request : request.url;
+
+class MemoryCache {
+    #entries = new Map();
+
+    async match(request) {
+        return this.#entries.get(requestKey(request))?.clone();
+    }
+
+    async matchAll(request) {
+        if (request === undefined) {
+            return [...this.#entries.values()].map((r) => r.clone());
+        }
+        const hit = await this.match(request);
+        return hit ? [hit] : [];
+    }
+
+    async put(request, response) {
+        this.#entries.set(requestKey(request), response.clone());
+    }
+
+    async add(request) {
+        await this.put(request, await fetch(request));
+    }
+
+    async addAll(requests) {
+        await Promise.all(requests.map((r) => this.add(r)));
+    }
+
+    async delete(request) {
+        return this.#entries.delete(requestKey(request));
+    }
+
+    async keys() {
+        return [...this.#entries.keys()].map((url) => new Request(url));
+    }
+}
+
+class MemoryCacheStorage {
+    #caches = new Map();
+
+    async open(name) {
+        if (!this.#caches.has(name)) this.#caches.set(name, new MemoryCache());
+        return this.#caches.get(name);
+    }
+
+    async has(name) {
+        return this.#caches.has(name);
+    }
+
+    async delete(name) {
+        return this.#caches.delete(name);
+    }
+
+    async keys() {
+        return [...this.#caches.keys()];
+    }
+
+    async match(request) {
+        for (const cache of this.#caches.values()) {
+            const hit = await cache.match(request);
+            if (hit) return hit;
+        }
+        return undefined;
+    }
+}
+
+if (storageDenied('caches')) define('caches', new MemoryCacheStorage());

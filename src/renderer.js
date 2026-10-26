@@ -95,6 +95,17 @@ setInterval(() => {
     trace(`[net] ${inflight.size} pending:`, oldest.join(', '));
 }, 10000);
 
+const OriginalWorker = window.Worker;
+window.Worker = function (url, options) {
+    trace('[env] new Worker', url);
+    try {
+        return new OriginalWorker(url, options);
+    } catch (error) {
+        trace('[env] Worker failed', error);
+        throw error;
+    }
+};
+
 function probeStorage() {
     trace('[env] location', location.href, 'origin', String(self.origin));
     try {

@@ -112,6 +112,42 @@ async function run(ctx, port, url, label) {
     await new Promise((r) => server.listen(0, '127.0.0.1', r));
     const port = server.address().port;
 
+    // Which browser APIs does the CheerpJ loader touch?
+    try {
+        const loader = await (
+            await fetch('https://cjrtnc.leaningtech.com/2.3/loader.js')
+        ).text();
+        console.log(`loader.js: ${loader.length} bytes`);
+        for (const api of [
+            'caches',
+            'indexedDB',
+            'localStorage',
+            'Worker',
+            'SharedArrayBuffer',
+            'navigator.storage',
+            'serviceWorker',
+            'document.cookie',
+            'origin',
+            'postMessage'
+        ]) {
+            const hits = [];
+            let i = loader.indexOf(api);
+            while (i !== -1 && hits.length < 3) {
+                hits.push(
+                    loader
+                        .slice(Math.max(0, i - 60), i + 60)
+                        .replace(/\s+/g, ' ')
+                );
+                i = loader.indexOf(api, i + api.length);
+            }
+            console.log(
+                `- ${api}: ${hits.length ? hits.join(' ... ') : 'none'}`
+            );
+        }
+    } catch (error) {
+        console.log(`loader.js scan failed: ${error.message}`);
+    }
+
     const browser = await chromium.launch({ channel });
     const ctx = await browser.newContext();
     const normal = await run(ctx, port, '/probe.html', 'normal page');
