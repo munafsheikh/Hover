@@ -8,11 +8,14 @@ const CopyPlugin = require('copy-webpack-plugin');
 const PLANTUML_JS = 'node_modules/@sakirtemel/plantuml.js';
 
 module.exports = {
-    entry: { renderer: './src/renderer.js' },
+    entry: {
+        renderer: './src/renderer.js',
+        'raf-shim': './src/raf-shim.js'
+    },
     output: {
         path: path.resolve(__dirname, 'site/renderer'),
         filename: '[name].js',
-        clean: true,
+        clean: true
     },
     devtool: 'source-map',
     performance: { hints: false },
@@ -23,10 +26,10 @@ module.exports = {
                 exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',
-                    options: { presets: ['@babel/preset-env'] },
-                },
-            },
-        ],
+                    options: { presets: ['@babel/preset-env'] }
+                }
+            }
+        ]
     },
     plugins: [
         new CopyPlugin({
@@ -37,14 +40,14 @@ module.exports = {
                     'plantuml.js',
                     'plantuml-core.jar',
                     'plantuml-core.jar.js',
-                    'themes',
+                    'themes'
                 ].map((file) => ({
                     from: `${PLANTUML_JS}/${file}`,
                     to: `plantuml/${file}`,
                     // ship CheerpJ output untouched; skip Terser
-                    info: { minimized: true },
-                })),
-            ],
-        }),
-    ],
+                    info: { minimized: true }
+                }))
+            ]
+        })
+    ]
 };

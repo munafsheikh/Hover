@@ -55,11 +55,19 @@ const TYPES = {
 const STUB_SVG = (label) =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text y="20">${label}</text></svg>`;
 
+// Mimics CheerpJ's dependence on requestAnimationFrame, which never fires in
+// the offscreen document without the renderer's rAF shim
 const FAKE_CHEERPJ = `
 window.cheerpjInit = async () => {};
 window.cheerpjRunMain = async () => 0;
-window.cjCall = async (cls, method, mode, text) =>
-    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text y="20">local:' + text.length + '</text></svg>';
+window.cjCall = async (cls, method, mode, text) => {
+    const frame = await new Promise((r) => {
+        requestAnimationFrame(() => r(true));
+        setTimeout(() => r(false), 2000);
+    });
+    if (!frame) return '{"status":"General failure","exception":"requestAnimationFrame never fired"}';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text y="20">local:' + text.length + '</text></svg>';
+};
 `;
 
 function serve(handler) {
