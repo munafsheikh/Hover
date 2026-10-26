@@ -47,10 +47,11 @@ Webpack bundles six separate entry points defined in `webpack.config.js`:
 
 2. **content.js** - Content script injected into all web pages
    - Main orchestrator with singleton Logger instance
-   - Detects code blocks on hover
-   - Renders PlantUML diagrams via PlantUML server
-   - Manages popup display and diagram caching (24-hour TTL)
-   - Uses ContentHandlerRegistry for extensibility
+   - Detects code blocks on hover (`pre`, `code`, `textarea`, handler classes, custom trigger selector)
+   - Renders PlantUML via plantuml.js (fallback: PlantUML server), SVG inline
+   - Manages popup display (`src/ui/Popup.js`) and diagram caching (24-hour TTL)
+   - Uses ContentHandlerRegistry with handlers in `src/handlers/` (PlantUML, SVG, JSON)
+   - Hover timing via `src/utils/HoverDebouncer.js` (see Debouncing below)
 
 3. **popup.js** - Extension popup UI controller
    - Basic settings: enable/disable, toggle PlantUML/SVG, debounce time
@@ -78,7 +79,7 @@ Registry + Strategy pattern for managing different content type handlers (PlantU
 - `getHandler(content)`: Match content to appropriate handler
 - `getAllClassIdentifiers()`: Get CSS classes for detection
 
-**Note**: References a missing `BaseContentHandler` class - this is incomplete architecture for future extensibility.
+Handlers extend `src/handlers/BaseContentHandler.js` and implement `canHandle`, `getClassIdentifiers`, `toBlocks` (returns `{kind: 'plantuml'|'svg', code}`); `settingKey` names the settings flag that enables them.
 
 #### Singleton Logger
 **Location**: `src/utils/Logger.js`
@@ -172,7 +173,8 @@ npm test -- StringMatcher    # Run specific test file
 ### Test Structure
 - Unit tests located alongside source files: `*.test.js`
 - Jest configuration via `babel.config.js`
-- Current coverage: StringMatcher utility
+- Current coverage: StringMatcher, handlers, HoverDebouncer, PlantUMLJs helpers
+- Browser smoke test: `npm run test:e2e [-- --stub-cheerpj]` loads `dist/` in Chromium (requires `playwright`, not a dependency) and hovers `test/e2e.html`; the PlantUML server is stubbed, `--stub-cheerpj` fakes the CheerpJ CDN to exercise the plantuml.js path offline
 
 ### Writing New Tests
 Follow Jest conventions:
@@ -269,14 +271,13 @@ logger.info('Message');
 
 ## Important Notes
 
-- **Missing BaseContentHandler**: The ContentHandlerRegistry references a non-existent base class at `../handlers/BaseContentHandler.js` - this is incomplete architecture for future handler implementations
 - **PlantUML Server**:
   - Default uses public server (https://www.plantuml.com/plantuml)
   - Configurable in extension options under "PlantUML" tab
   - Supports local servers for privacy/performance (see LOCAL_PLANTUML_SETUP.md)
   - Format can be changed between SVG and PNG
 - **Settings Management**: Extension loads settings from `chrome.storage.sync` on initialization and updates when changed
-- **Debouncing**: 15-second default debounce prevents excessive API calls
+- **Debouncing** (`HoverDebouncer`): a block renders after a 250ms hover intent (leaving earlier cancels); the visible block is never re-rendered by repeated mouseovers; a dismissed block stays closed for `settings.debounceTime` (default 15s). Other blocks are never blocked.
 - **Future Extensibility**: Architecture designed to support ChatGPT integration and custom APIs (v2.0)
 
 ## Chrome Extension CSP Considerations

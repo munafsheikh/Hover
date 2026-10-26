@@ -6,8 +6,9 @@
     "scripts": {
         "build": "webpack --mode production",
         "dev": "webpack --mode development --watch",
-        "lint": "eslint src/**/*.js",
+        "lint": "eslint 'src/**/*.js'",
         "test": "jest",
+        "test:e2e": "node scripts/e2e-smoke.js",
         "version": "node scripts/update-version.js && git add manifest.json",
         "package": "node scripts/package.js",
         "convert-icons": "node scripts/convert-icons.js",

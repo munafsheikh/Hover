@@ -1,8 +1,8 @@
 export class StringMatcher {
     static PATTERNS = {
         PLANTUML: {
-            START: /@start(uml|ditaa|json|yaml|mindmap)/i,
-            END: /@end(uml|ditaa|json|yaml|mindmap)/i
+            // uml, dot, salt, mindmap, gantt, wbs, json, yaml, ebnf, regex, ...
+            START: /@start([a-z]+)/i
         },
         CODE_BLOCK: {
             START: /```(\w+)?/,
@@ -39,7 +39,9 @@ export class StringMatcher {
 
             // Find matching end tag
             const afterStart = source.slice(startIndex + startMatch[0].length);
-            const endMatch = afterStart.match(this.PATTERNS.PLANTUML.END);
+            const endMatch = afterStart.match(
+                new RegExp(`@end${type}\\b`, 'i')
+            );
 
             if (!endMatch) break;
 

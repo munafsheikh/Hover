@@ -1,15 +1,28 @@
 import { Logger } from './utils/Logger';
-import { StringMatcher } from './utils/StringMatcher';
+import { ContentHandlerRegistry } from './registry/ContentHandlers';
+import { JsonHandler, PlantUMLHandler, SvgHandler } from './handlers';
+import { HoverDebouncer } from './utils/HoverDebouncer';
+import { Popup } from './ui/Popup';
 import {
     ENGINE_PLANTUML_JS,
     RENDER_ACTION,
     svgToDataUrl
 } from './utils/PlantUMLJs';
 
-class ContentScript {
+const DEFAULT_SETTINGS = {
+    enabled: true,
+    renderPlantUML: true,
+    renderSVG: true,
+    debounceTime: 15000
+};
+
+const DEFAULT_SERVER = 'https://www.plantuml.com/plantuml';
+const BASE_SELECTORS = ['pre', 'code', 'textarea'];
+
+export class ContentScript {
     logger;
-    settings = null;
-    advancedSettings = null;
+    settings = { ...DEFAULT_SETTINGS };
+    advancedSettings = {};
 
     /**
      * Cache of generated diagrams keyed by encoded UML text.
@@ -21,10 +34,21 @@ class ContentScript {
 
     constructor() {
         this.logger = Logger.getInstance();
-        this.popup = new Popup();
         this.registry = ContentHandlerRegistry.getInstance();
-        this.logger.info('ContentScript initialized');
+        this.debouncer = new HoverDebouncer({
+            cooldown: DEFAULT_SETTINGS.debounceTime
+        });
+        this.popup = new Popup({ onClose: this.handlePopupClose });
+        this.renderToken = 0;
+        this.styleElement = null;
         this.registerHandlers();
+        this.logger.info('ContentScript initialized');
+    }
+
+    registerHandlers() {
+        this.registry.register(new PlantUMLHandler());
+        this.registry.register(new SvgHandler());
+        this.registry.register(new JsonHandler());
     }
 
     /**
@@ -34,11 +58,6 @@ class ContentScript {
         this.diagramCache.clear();
     }
 
-    /**
-     * Retrieve a diagram image for the given UML. Renders locally with
-     * plantuml.js by default, falling back to the PlantUML server. Uses an
-     * in-memory cache keyed by encoded UML to avoid repeated renders.
-     */
     async getDiagramDataUrl(encodedText, code) {
         const cached = ContentScript.diagramCache.get(encodedText);
         if (cached && Date.now() - cached.timestamp < ContentScript.CACHE_TTL) {
@@ -93,8 +112,7 @@ class ContentScript {
     async fetchFromServer(encodedText) {
         // Get PlantUML server URL and format from settings
         const serverUrl =
-            this.advancedSettings?.plantuml?.server ||
-            'https://www.plantuml.com/plantuml';
+            this.advancedSettings?.plantuml?.server || DEFAULT_SERVER;
         const format = this.advancedSettings?.plantuml?.format || 'svg';
 
         // Construct URL with configurable server
@@ -115,277 +133,267 @@ class ContentScript {
         });
     }
 
-    async loadPlantUMLEncoder(doc, lib) {
-        const libLocation = lib || 'lib/plantuml-encoder.min.js';
-        const document = doc || window.document;
+    getDiagramLinks(encodedText) {
+        const serverUrl =
+            this.advancedSettings?.plantuml?.server || DEFAULT_SERVER;
+        return [
+            ['Open as PNG', `${serverUrl}/png/${encodedText}`],
+            ['Open as SVG', `${serverUrl}/svg/${encodedText}`],
+            ['View as Text', `${serverUrl}/txt/${encodedText}`]
+        ];
+    }
 
-        this.logger.debug('Loading PlantUML encoder from:', libLocation);
+    /**
+     * Resolve the code block element for a hovered node.
+     */
+    findCodeRoot(node) {
+        const target = node?.nodeType === 1 ? node : node?.parentElement;
+        if (!target || this.popup.contains(target)) return null;
 
-        return new Promise((resolve, reject) => {
-            if (window.plantumlEncoder) {
-                this.logger.debug('PlantUML encoder already loaded');
-                return resolve();
+        const selectors = [
+            ...BASE_SELECTORS,
+            ...this.registry.getAllClassIdentifiers().map((cls) => `.${cls}`)
+        ];
+        const custom = this.advancedSettings?.general?.triggerSelector;
+
+        let root = target.closest(selectors.join(','));
+        if (!root && custom) {
+            try {
+                root = target.closest(custom);
+            } catch {
+                this.logger.warn('Invalid trigger selector:', custom);
             }
-
-            const script = document.createElement('script');
-            script.src = chrome.runtime?.getURL
-                ? chrome.runtime.getURL(libLocation)
-                : libLocation;
-
-            script.onload = () => {
-                this.logger.info('PlantUML encoder loaded successfully');
-                resolve();
-            };
-
-            script.onerror = (error) => {
-                this.logger.error('Failed to load PlantUML encoder:', error);
-                reject(error);
-            };
-
-            document.head.appendChild(script);
-        });
+        }
+        return root ? root.closest('pre') || root : null;
     }
 
-    async loadHighlightJS() {
-        this.logger.debug('Loading highlight.js');
-        const script = document.createElement('script');
-        script.src = chrome.runtime.getURL('lib/highlight.min.js');
-
-        const css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = chrome.runtime.getURL('lib/highlight.min.css');
-
-        document.head.appendChild(css);
-
-        return new Promise((resolve, reject) => {
-            script.onload = () => {
-                this.logger.info('highlight.js loaded');
-                resolve();
-            };
-            script.onerror = (error) => {
-                this.logger.error('Failed to load highlight.js:', error);
-                reject(error);
-            };
-            document.head.appendChild(script);
-        });
+    getCodeText(root) {
+        return root.tagName === 'TEXTAREA' ? root.value : root.textContent;
     }
 
-    handleMouseOver = async (event) => {
-        const now = Date.now();
-        if (now - this.lastHoverTime < this.HOVER_DEBOUNCE_TIME) {
-            this.logger.debug('Debouncing hover event');
-            return;
+    getEnabledHandler(text) {
+        const handler = this.registry.getHandler(text || '');
+        if (!handler || this.settings[handler.settingKey] === false) {
+            return null;
         }
+        return handler;
+    }
 
-        const target = event.target;
-        if (!target || this.popup.getContentDiv()?.contains(target)) {
-            this.logger.debug('Invalid target or hovering over popup');
-            return;
-        }
+    handleMouseOver = (event) => {
+        if (this.settings.enabled === false) return;
 
-        let codeText = '',
-            isCode = false;
+        const root = this.findCodeRoot(event.target);
+        if (!root) return;
 
-        // Check if element matches any supported type
+        const text = this.getCodeText(root);
+        const handler = this.getEnabledHandler(text);
+        if (!handler) return;
+
+        const { clientX, clientY } = event;
         if (
-            ['CODE', 'PRE'].includes(target.tagName) ||
-            this.registry
-                .getAllClassIdentifiers()
-                .some((cls) => target.classList.contains(cls))
+            this.debouncer.request(root, () =>
+                this.showPreview(handler, text, clientX, clientY)
+            )
         ) {
-            codeText = target.textContent || '';
-            isCode = true;
-            this.logger.debug('Found code element:', {
-                tagName: target.tagName,
-                classes: target.classList.toString()
-            });
-        } else if (
-            target.parentElement &&
-            ['CODE', 'PRE'].includes(target.parentElement.tagName)
-        ) {
-            codeText = target.parentElement.textContent || '';
-            isCode = true;
-            this.logger.debug('Found code in parent element');
-        }
-
-        if (isCode && this.registry.getHandler(codeText)) {
-            this.logger.debug('Processing code:', { length: codeText.length });
-            this.currentHoverElement = target;
-            this.lastHoverTime = now;
-            this.popup.show(event.clientX, event.clientY);
-            await this.renderCode(codeText);
+            this.logger.debug('Scheduled preview:', handler.type);
         }
     };
 
-    async initialize(doc, lib) {
-        this.logger.info('Initializing ContentScript');
-        try {
-            // Load settings from storage
-            await this.loadSettings();
-
-            await this.loadPlantUMLEncoder(doc, lib);
-            await this.loadHighlightJS();
-
-            document.addEventListener('mouseover', this.handleMouseOver);
-            document.addEventListener('mouseout', this.handleMouseOut);
-            document.addEventListener('click', this.handleClick);
-
-            // Handle extension messages with proper response
-            chrome.runtime?.onMessage?.addListener(
-                (msg, sender, sendResponse) => {
-                    this.logger.debug('Received message:', msg);
-
-                    // Handle the message asynchronously
-                    (async () => {
-                        try {
-                            if (msg.action === 'updateSettings') {
-                                // Handle settings update
-                                await this.handleSettingsUpdate(msg.settings);
-                            } else if (
-                                msg.action === 'updateAdvancedSettings'
-                            ) {
-                                await this.handleAdvancedSettingsUpdate(
-                                    msg.advancedSettings
-                                );
-                            } else if (msg.action === 'clearCache') {
-                                ContentScript.clearDiagramCache();
-                            }
-                            sendResponse({ success: true });
-                        } catch (error) {
-                            this.logger.error('Error handling message:', error);
-                            sendResponse({
-                                success: false,
-                                error: error.message
-                            });
-                        }
-                    })();
-
-                    return true; // Indicate we will send response asynchronously
-                }
-            );
-
-            this.logger.info('ContentScript initialization complete');
-        } catch (err) {
-            this.logger.error('Initialize error:', err);
-            throw err;
+    handleMouseOut = (event) => {
+        const root = this.findCodeRoot(event.target);
+        if (root && !root.contains(event.relatedTarget)) {
+            this.debouncer.cancel(root);
         }
+    };
+
+    handleClick = (event) => {
+        if (this.popup.isVisible() && !this.popup.contains(event.target)) {
+            this.popup.hide(true);
+        }
+    };
+
+    handlePopupClose = () => {
+        this.renderToken++;
+        this.debouncer.dismiss();
+    };
+
+    async showPreview(handler, text, x, y) {
+        const token = ++this.renderToken;
+        const general = this.advancedSettings?.general || {};
+        this.popup.setSize(general.popupWidth, general.popupHeight);
+        this.popup.show(x, y);
+
+        const contentDiv = this.popup.getContentDiv();
+        contentDiv.replaceChildren(
+            Object.assign(document.createElement('div'), {
+                textContent: 'Loading...',
+                style: 'text-align: center'
+            })
+        );
+
+        const sections = await Promise.all(
+            handler.toBlocks(text).map((block) => this.renderBlock(block))
+        );
+        if (token !== this.renderToken) return; // superseded or closed
+
+        contentDiv.replaceChildren(...sections);
     }
 
-    async loadSettings() {
-        return new Promise((resolve) => {
-            chrome.storage.sync.get(
-                ['settings', 'advancedSettings'],
-                (data) => {
-                    this.settings = data.settings || {};
-                    this.advancedSettings = data.advancedSettings || {};
-                    this.logger.info('Settings loaded:', {
-                        settings: this.settings,
-                        advancedSettings: this.advancedSettings
-                    });
-                    resolve();
+    async renderBlock(block) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'hover-extension-block';
+        wrapper.style.cssText = `font-family: monospace; font-size: 12px;
+            border: 1px solid #ccc; background: #fafafa; padding: 10px;
+            margin-bottom: 15px;`;
+
+        const title = document.createElement('div');
+        title.style.cssText =
+            'font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px';
+        title.textContent =
+            block.kind === 'svg' ? 'SVG Preview' : 'PlantUML Preview';
+        wrapper.appendChild(title);
+
+        try {
+            let src;
+            let links = [];
+            if (block.kind === 'svg') {
+                src = svgToDataUrl(block.code);
+            } else {
+                if (!window.plantumlEncoder) {
+                    throw new Error('PlantUML encoder not loaded');
                 }
+                const encodedText = window.plantumlEncoder.encode(block.code);
+                src = await this.getDiagramDataUrl(encodedText, block.code);
+                links = this.getDiagramLinks(encodedText);
+            }
+
+            const img = document.createElement('img');
+            img.className = 'hover-extension-diagram';
+            img.src = src;
+            img.style.cssText =
+                'max-width: 100%; height: auto; border: 1px solid #ddd; background: white';
+            img.onerror = () => {
+                img.replaceWith(this.errorElement('Failed to load diagram'));
+            };
+            wrapper.appendChild(img);
+
+            if (links.length) {
+                const linkRow = document.createElement('div');
+                linkRow.style.cssText =
+                    'display: flex; gap: 10px; margin-top: 8px; font-family: Arial, sans-serif;';
+                for (const [label, href] of links) {
+                    linkRow.appendChild(
+                        Object.assign(document.createElement('a'), {
+                            textContent: label,
+                            href,
+                            target: '_blank',
+                            rel: 'noopener noreferrer'
+                        })
+                    );
+                }
+                wrapper.appendChild(linkRow);
+            }
+        } catch (error) {
+            this.logger.error('Error rendering block:', error);
+            wrapper.appendChild(
+                this.errorElement(`Error rendering diagram: ${error.message}`)
             );
+        }
+
+        const details = document.createElement('details');
+        details.style.marginTop = '8px';
+        const summary = document.createElement('summary');
+        summary.textContent = 'Source';
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'white-space: pre-wrap; word-break: break-all;';
+        pre.textContent = block.code;
+        details.append(summary, pre);
+        wrapper.appendChild(details);
+
+        return wrapper;
+    }
+
+    errorElement(message) {
+        return Object.assign(document.createElement('div'), {
+            textContent: message,
+            style: 'color: red'
         });
     }
 
-    async handleSettingsUpdate(settings) {
-        this.logger.debug('Updating settings:', settings);
-        this.settings = settings;
+    applySettings(settings) {
+        this.settings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+        this.debouncer.setCooldown(Number(this.settings.debounceTime));
     }
 
-    async handleAdvancedSettingsUpdate(advancedSettings) {
-        this.logger.debug('Updating advanced settings:', advancedSettings);
-        this.advancedSettings = advancedSettings;
-        // Clear cache when settings change to force re-fetch with new server
-        ContentScript.clearDiagramCache();
-    }
-
-    async renderPlantUMLInline(blocks, contentDiv) {
-        this.logger.debug('Rendering PlantUML blocks:', blocks.length);
-        contentDiv.innerHTML = '';
-
-        for (const block of blocks) {
-            try {
-                const wrapper = document.createElement('div');
-                wrapper.style.cssText = `
-                    font-family: monospace;
-                    font-size: 12px;
-                    white-space: pre-wrap;
-                    word-break: break-all;
-                    border: 1px solid #ccc;
-                    background: #fafafa;
-                    padding: 10px;
-                    margin-bottom: 30px;
-                `;
-
-                const imgSrc = await this.getDiagramDataUrl(
-                    block.encodedText,
-                    block.code
-                );
-                this.logger.debug(
-                    'Using diagram source:',
-                    imgSrc.substring(0, 50)
-                );
-
-                wrapper.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px">
-                        PlantUML Preview
-                    </div>
-                    <img src="${imgSrc}" style="max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 15px">
-                    <pre><code class="language-text">${this.htmlEscape(block.code)}</code></pre>
-                `;
-
-                const img = wrapper.querySelector('img');
-                if (img) {
-                    img.onerror = (e) => {
-                        this.logger.error('Image load error:', e);
-                        img.style.display = 'none';
-                        wrapper.appendChild(
-                            Object.assign(document.createElement('div'), {
-                                textContent: 'Failed to load diagram',
-                                style: 'color: red'
-                            })
-                        );
-                    };
-                }
-
-                contentDiv.appendChild(wrapper);
-            } catch (error) {
-                this.logger.error('Error rendering block:', error);
-                contentDiv.innerHTML += `<div style="color: red">Error rendering diagram: ${error.message}</div>`;
-            }
+    applyAdvancedSettings(advancedSettings) {
+        this.advancedSettings = advancedSettings || {};
+        const css = this.advancedSettings.general?.customCSS || '';
+        if (css && !this.styleElement) {
+            this.styleElement = document.createElement('style');
+            document.head.appendChild(this.styleElement);
         }
+        if (this.styleElement) this.styleElement.textContent = css;
     }
 
-    extractBlocks(text) {
-        this.logger.debug('Extracting blocks from text');
-        const matches = StringMatcher.findMatches(text);
-
-        return matches
-            .map((match) => {
-                const handler = this.registry.getHandler(match.content);
-                if (!handler) {
-                    this.logger.debug(
-                        `No handler found for type: ${match.type}`
-                    );
-                    return null;
-                }
-
-                const wrappedContent = handler.wrap(match.content);
-                const encodedText =
-                    PlantUMLCache.get(wrappedContent) ||
-                    this.encodePlantUML(wrappedContent);
-
-                if (!PlantUMLCache.get(wrappedContent)) {
-                    PlantUMLCache.set(wrappedContent, encodedText);
-                }
-
-                return {
-                    type: match.type,
-                    code: wrappedContent,
-                    encodedText
-                };
-            })
-            .filter((block) => block !== null);
+    async loadSettings() {
+        const data = await chrome.storage.sync.get([
+            'settings',
+            'advancedSettings'
+        ]);
+        this.applySettings(data.settings);
+        this.applyAdvancedSettings(data.advancedSettings);
+        this.logger.info('Settings loaded:', {
+            settings: this.settings,
+            advancedSettings: this.advancedSettings
+        });
     }
+
+    async initialize() {
+        this.logger.info('Initializing ContentScript');
+        try {
+            await this.loadSettings();
+        } catch (error) {
+            this.logger.error(
+                'Failed to load settings, using defaults:',
+                error
+            );
+        }
+
+        document.addEventListener('mouseover', this.handleMouseOver);
+        document.addEventListener('mouseout', this.handleMouseOut);
+        document.addEventListener('click', this.handleClick, true);
+
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== 'sync') return;
+            if (changes.settings) {
+                this.applySettings(changes.settings.newValue);
+            }
+            if (changes.advancedSettings) {
+                this.applyAdvancedSettings(changes.advancedSettings.newValue);
+                // Server/engine may have changed: force re-render
+                ContentScript.clearDiagramCache();
+            }
+        });
+
+        chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+            if (msg.action === 'updateSettings') {
+                this.applySettings(msg.settings);
+            } else if (msg.action === 'updateAdvancedSettings') {
+                this.applyAdvancedSettings(msg.advancedSettings);
+                ContentScript.clearDiagramCache();
+            } else if (msg.action === 'clearCache') {
+                ContentScript.clearDiagramCache();
+            } else {
+                return false;
+            }
+            sendResponse({ success: true });
+            return false;
+        });
+
+        this.logger.info('ContentScript initialization complete');
+    }
+}
+
+if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+    new ContentScript().initialize();
 }
