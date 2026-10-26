@@ -4,6 +4,7 @@ import { JsonHandler, PlantUMLHandler, SvgHandler } from './handlers';
 import { HoverDebouncer } from './utils/HoverDebouncer';
 import { Popup } from './ui/Popup';
 import {
+    DEFAULT_RENDERER_URL,
     ENGINE_PLANTUML_JS,
     RENDER_ACTION,
     svgToDataUrl
@@ -101,7 +102,10 @@ export class ContentScript {
         this.logger.debug('Rendering diagram with plantuml.js');
         const response = await chrome.runtime.sendMessage({
             action: RENDER_ACTION,
-            code
+            code,
+            rendererUrl:
+                this.advancedSettings?.plantuml?.rendererUrl ||
+                DEFAULT_RENDERER_URL
         });
         if (!response?.svg) {
             throw new Error(response?.error || 'No response from renderer');

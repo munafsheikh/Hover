@@ -35,9 +35,9 @@ npm run version          # Update version in manifest.json
 
 ## Code Architecture
 
-### Entry Points (6 independent bundles)
+### Entry Points (5 extension bundles + renderer site)
 
-Webpack bundles six separate entry points defined in `webpack.config.js`:
+Webpack bundles five extension entry points defined in `webpack.config.js`; `webpack.site.config.js` builds the renderer site:
 
 1. **background.js** - Service worker (Manifest V3)
    - Manages extension lifecycle (install, update)
@@ -62,12 +62,13 @@ Webpack bundles six separate entry points defined in `webpack.config.js`:
    - Future: Custom API and ChatGPT integration settings
 
 5. **offscreen.js** - Offscreen document (`offscreen.html`, reason `IFRAME_SCRIPTING`)
-   - Created on demand by background.js; one per extension
-   - Hosts the sandboxed renderer iframe and relays render requests
+   - Created on demand by background.js; one per extension (offscreen docs only get `chrome.runtime`, so the renderer URL arrives with each request)
+   - Embeds the renderer page in an iframe and relays render requests via `postMessage` (origin-checked); fails fast if the page doesn't post `ready`
 
-6. **renderer.js** - Sandboxed page (`renderer.html`) running plantuml.js
-   - Loads the CheerpJ 2.3 runtime from `cjrtnc.leaningtech.com` (allowed only by the sandbox CSP in manifest.json)
-   - Calls `com.plantuml.wasm.v1.Svg.convert` and returns SVG markup
+6. **renderer.js** - plantuml.js renderer page (`site-src/index.html` → `site/renderer/`, `npm run build:site`)
+   - Static site deployed to GitHub Pages by `.github/workflows/pages.yml`; default URL `https://munafsheikh.github.io/Hover/renderer/` (`DEFAULT_RENDERER_URL`, overridable in options)
+   - Loads CheerpJ 2.3 from `cjrtnc.leaningtech.com` and plantuml.js from the site; calls `com.plantuml.wasm.v1.Svg.convert`, returns SVG
+   - Why hosted: CheerpJ hangs in an opaque origin, and MV3 sandbox pages can't have `allow-same-origin`; hosting also keeps remote code out of the extension package. Diagram text stays in the browser.
 
 ### Key Components
 
@@ -102,7 +103,7 @@ Pattern detection utility for code blocks:
 
 Default engine (`advancedSettings.plantuml.engine = 'plantumljs'`):
 ```
-content.js --renderPlantUML--> background.js --> offscreen.js --postMessage--> renderer.js (plantuml.js/CheerpJ)
+content.js --renderPlantUML--> background.js --> offscreen.js --postMessage--> renderer page iframe (plantuml.js/CheerpJ)
 ```
 On failure, falls back to the server flow below unless `fallbackToServer` is false.
 
@@ -174,7 +175,7 @@ npm test -- StringMatcher    # Run specific test file
 - Unit tests located alongside source files: `*.test.js`
 - Jest configuration via `babel.config.js`
 - Current coverage: StringMatcher, handlers, HoverDebouncer, PlantUMLJs helpers
-- Browser smoke test: `npm run test:e2e [-- --stub-cheerpj]` loads `dist/` in Chromium (requires `playwright`, not a dependency) and hovers `test/e2e.html`; the PlantUML server is stubbed, `--stub-cheerpj` fakes the CheerpJ CDN to exercise the plantuml.js path offline
+- Browser smoke test: `npm run build && npm run build:site && npm run test:e2e -- [--cheerpj=offline|stub|real] [--channel=msedge] [--renderer-url=<url>]` loads `dist/` in Chromium/Edge and hovers `test/e2e.html`. The PlantUML server is stubbed and `site/` is served locally: `offline` = renderer unreachable (server fallback), `stub` = fake CheerpJ, `real` = real CheerpJ CDN (network). CI runs all three on Chromium and Edge
 
 ### Writing New Tests
 Follow Jest conventions:
@@ -242,7 +243,7 @@ dist/
 ### Static Assets
 - **icons/**: SVG source + generated PNG (16x16, 48x48, 128x128)
 - **lib/plantuml-encoder.min.js**: DEFLATE-based PlantUML text encoder
-- **plantuml/**: copied at build time from `@sakirtemel/plantuml.js` (plantuml.js, plantuml-core.jar(.js), themes). `stdlib` (~166MB) is not shipped, so `!include <...>` stdlib diagrams fall back to the server
+- **site/renderer/plantuml/** (renderer site, not the extension): copied at build time from `@sakirtemel/plantuml.js` (plantuml.js, plantuml-core.jar(.js), themes). `stdlib` (~166MB) is not shipped, so `!include <...>` stdlib diagrams fall back to the server
 
 ## Code Patterns and Conventions
 

@@ -12,7 +12,7 @@ A Chrome and Microsoft Edge extension that provides render-on-hover functionalit
 ### Version 1
 
 - Auto-renders PlantUML and SVG diagrams when hovering over code blocks
-- Renders PlantUML in-browser with [plantuml.js](https://github.com/plantuml/plantuml.js) by default, falling back to the PlantUML server
+- Renders PlantUML in-browser with [plantuml.js](https://github.com/plantuml/plantuml.js) by default (via a static renderer page on GitHub Pages; diagram text never leaves your browser), falling back to the PlantUML server
 - Directly renders SVG code
 
 Usage
@@ -74,6 +74,7 @@ For advanced settings, click on "Advanced Options" to configure:
 - Custom CSS for the popup
 - Customize selectors for code detection
 - Choose rendering engine: plantuml.js (in-browser) or PlantUML server, with optional server fallback
+- Point plantuml.js at a self-hosted renderer page (`npm run build:site`, serve `site/renderer/`)
 - Configure PlantUML server URL (supports local servers)
 - Set up custom API parameters (coming in future versions)
 - Configure ChatGPT integration (coming in future versions)

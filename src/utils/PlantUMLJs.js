@@ -1,6 +1,6 @@
 /**
  * Helpers shared by the plantuml.js (in-browser) rendering pipeline.
- * content -> background -> offscreen document -> sandboxed renderer page
+ * content -> background -> offscreen document -> embedded renderer page
  */
 
 export const ENGINE_PLANTUML_JS = 'plantumljs';
@@ -8,6 +8,10 @@ export const ENGINE_SERVER = 'server';
 
 export const OFFSCREEN_TARGET = 'offscreen';
 export const RENDER_ACTION = 'renderPlantUML';
+
+// Hosted plantuml.js renderer page (see site-src/); configurable in options
+export const DEFAULT_RENDERER_URL =
+    'https://munafsheikh.github.io/Hover/renderer/';
 
 /**
  * Normalise the value returned by com.plantuml.wasm.v1.Svg.convert.

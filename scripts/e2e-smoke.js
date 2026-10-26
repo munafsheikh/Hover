@@ -1,49 +1,56 @@
 #!/usr/bin/env node
 /**
  * Loads the built extension in Chromium and exercises hover rendering
- * against test/e2e.html. The PlantUML server is always stubbed.
+ * against test/e2e.html. The PlantUML server is always stubbed; the
+ * plantuml.js renderer site (npm run build:site) is served locally.
  *
  * Usage: node scripts/e2e-smoke.js [distDir] [--cheerpj=offline|stub|real]
- *   [--channel=<name>] [--executable=<path>]
- *   --cheerpj: how the CheerpJ CDN behaves (default offline)
- *       offline  unreachable: plantuml.js fails, server fallback is used
- *       stub     local fake runtime: exercises the plantuml.js message path
- *       real     the real CDN (needs network): renders with real plantuml.js
+ *   [--renderer-url=<url>] [--channel=<name>] [--executable=<path>]
+ *   --cheerpj: how the plantuml.js renderer behaves (default offline)
+ *       offline  renderer unreachable: server fallback is used
+ *       stub     local site with a fake CheerpJ runtime: exercises the
+ *                plantuml.js message path offline
+ *       real     local site with the real CheerpJ CDN (needs network)
  *     --stub-cheerpj is an alias for --cheerpj=stub
+ *   --renderer-url: use this renderer page instead (e.g. the deployed site);
+ *     implies real plantuml.js
  *   --channel: Playwright browser channel, e.g. msedge or chrome
  *   --executable: path to another Chromium-based browser, e.g.
  *                 /opt/microsoft/msedge/msedge
  *   Defaults to Playwright's bundled Chromium.
- * Requires: playwright (not a project dependency)
  */
 const fs = require('fs');
 const http = require('http');
-const os = require('os');
 const path = require('path');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
+const option = (name) =>
+    args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+const rendererOverride = option('renderer-url');
 const cheerpj = args.includes('--stub-cheerpj')
     ? 'stub'
-    : args
-          .find((a) => a.startsWith('--cheerpj='))
-          ?.slice('--cheerpj='.length) || 'offline';
+    : rendererOverride
+      ? 'real'
+      : option('cheerpj') || 'offline';
 if (!['offline', 'stub', 'real'].includes(cheerpj)) {
     throw new Error(`Unknown --cheerpj mode: ${cheerpj}`);
 }
 // The real runtime downloads a JVM on first use
 const RENDER_TIMEOUT = cheerpj === 'real' ? 180000 : 20000;
-const executable = args
-    .find((a) => a.startsWith('--executable='))
-    ?.slice('--executable='.length);
-const channel =
-    args.find((a) => a.startsWith('--channel='))?.slice('--channel='.length) ||
-    'chromium';
+const executable = option('executable');
+const channel = option('channel') || 'chromium';
 const distDir = path.resolve(
     args.find((a) => !a.startsWith('--')) || path.join(root, 'dist')
 );
-const CDN = 'https://cjrtnc.leaningtech.com';
+const siteDir = path.join(root, 'site');
+const CDN = 'https://cjrtnc.leaningtech.com/2.3/loader.js';
+const TYPES = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.jar': 'application/java-archive'
+};
 
 const STUB_SVG = (label) =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text y="20">${label}</text></svg>`;
@@ -62,32 +69,49 @@ function serve(handler) {
     });
 }
 
-function prepareExtension(port) {
-    if (cheerpj === 'real') return distDir;
-    // offline: a closed local port so the loader fails fast
-    const host =
-        cheerpj === 'stub' ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:9';
-    const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'hover-ext-'));
-    fs.cpSync(distDir, copy, { recursive: true });
-    for (const file of ['renderer.html', 'manifest.json']) {
-        const p = path.join(copy, file);
-        fs.writeFileSync(p, fs.readFileSync(p, 'utf8').split(CDN).join(host));
+function serveSite(url, res) {
+    const file = path.join(siteDir, url.pathname.replace(/\/$/, '/index.html'));
+    if (
+        !file.startsWith(siteDir) ||
+        !fs.existsSync(file) ||
+        fs.statSync(file).isDirectory()
+    ) {
+        res.writeHead(404);
+        return res.end();
     }
-    return copy;
+    let body = fs.readFileSync(file);
+    if (cheerpj === 'stub' && file.endsWith('index.html')) {
+        body = body.toString().replace(CDN, '/fake-cheerpj.js');
+    }
+    res.writeHead(200, {
+        'content-type': TYPES[path.extname(file)] || 'application/octet-stream'
+    });
+    res.end(body);
 }
 
 async function main() {
     const fixture = fs.readFileSync(path.join(root, 'test/e2e.html'));
+    if (!rendererOverride && cheerpj !== 'offline' && !fs.existsSync(siteDir)) {
+        throw new Error('site/ missing: run npm run build:site first');
+    }
     const server = await serve((req, res) => {
-        if (req.url.startsWith('/2.3/loader.js')) {
+        const url = new URL(req.url, 'http://localhost');
+        if (url.pathname === '/fake-cheerpj.js') {
             res.writeHead(200, { 'content-type': 'text/javascript' });
             return res.end(FAKE_CHEERPJ);
         }
+        if (url.pathname.startsWith('/renderer/')) return serveSite(url, res);
         res.writeHead(200, { 'content-type': 'text/html' });
         res.end(fixture);
     });
     const port = server.address().port;
-    const ext = prepareExtension(port);
+    const ext = distDir;
+    // offline: a closed local port, so the renderer never loads
+    const rendererUrl =
+        rendererOverride ||
+        (cheerpj === 'offline'
+            ? 'http://127.0.0.1:9/renderer/'
+            : `http://127.0.0.1:${port}/renderer/`);
 
     const ctx = await chromium.launchPersistentContext('', {
         headless: true,
@@ -95,7 +119,27 @@ async function main() {
         args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`]
     });
     console.log(
-        `Browser: ${ctx.browser()?.version() || executable || channel}, cheerpj: ${cheerpj}`
+        `Browser: ${ctx.browser()?.version() || executable || channel}, cheerpj: ${cheerpj}, renderer: ${rendererUrl}`
+    );
+
+    // Point the extension at the renderer under test
+    const sw =
+        ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker'));
+    const extOrigin = sw.url().split('/').slice(0, 3).join('/');
+    const extPage = await ctx.newPage();
+    await extPage.goto(`${extOrigin}/options.html`);
+    await extPage.evaluate(
+        (url) =>
+            chrome.storage.sync.set({
+                advancedSettings: {
+                    plantuml: {
+                        engine: 'plantumljs',
+                        fallbackToServer: true,
+                        rendererUrl: url
+                    }
+                }
+            }),
+        rendererUrl
     );
 
     const serverHits = [];
@@ -110,30 +154,26 @@ async function main() {
 
     if (cheerpj === 'real') {
         // Render directly through the extension first, to surface runtime errors
-        const sw =
-            ctx.serviceWorkers()[0] ||
-            (await ctx.waitForEvent('serviceworker'));
-        const extPage = await ctx.newPage();
-        await extPage.goto(
-            `${sw.url().split('/').slice(0, 3).join('/')}/options.html`
-        );
         const started = Date.now();
-        const direct = await extPage.evaluate(() =>
-            chrome.runtime.sendMessage({
-                action: 'renderPlantUML',
-                code: '@startuml\nAlice -> Bob : hello\n@enduml'
-            })
+        const direct = await extPage.evaluate(
+            (url) =>
+                chrome.runtime.sendMessage({
+                    action: 'renderPlantUML',
+                    code: '@startuml\nAlice -> Bob : hello\n@enduml',
+                    rendererUrl: url
+                }),
+            rendererUrl
         );
         const ok = direct?.svg?.includes('<svg');
         console.log(
             `${ok ? 'PASS' : 'FAIL'} real plantuml.js render in ${Date.now() - started}ms - ${JSON.stringify(direct).slice(0, 200)}`
         );
-        await extPage.close();
         if (!ok) {
             console.log(`Renderer log:\n${(direct?.log || []).join('\n')}`);
             process.exit(1);
         }
     }
+    await extPage.close();
 
     const page = await ctx.newPage();
     const logs = [];

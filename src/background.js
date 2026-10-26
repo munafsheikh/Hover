@@ -23,7 +23,7 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
 
 let creatingOffscreen = null;
 
-// Single offscreen document hosting the sandboxed plantuml.js renderer
+// Single offscreen document hosting the plantuml.js renderer page
 async function ensureOffscreenDocument() {
     if (await chrome.offscreen.hasDocument()) return;
     if (!creatingOffscreen) {
@@ -52,7 +52,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 chrome.runtime.sendMessage({
                     target: OFFSCREEN_TARGET,
                     action: RENDER_ACTION,
-                    code: message.code
+                    code: message.code,
+                    rendererUrl: message.rendererUrl
                 })
             )
             .then(sendResponse)

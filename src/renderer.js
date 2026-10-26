@@ -1,16 +1,27 @@
 /**
- * Hover - plantuml.js renderer (sandboxed page)
- * Runs PlantUML in-browser via CheerpJ. Lives in a sandbox because CheerpJ
- * needs its remote runtime and dynamic code evaluation, both blocked by the
- * MV3 extension page CSP.
+ * Hover - plantuml.js renderer page
+ * Runs PlantUML in-browser via CheerpJ. Hosted as a static site (GitHub
+ * Pages by default) and embedded by the extension's offscreen document:
+ * CheerpJ needs a real origin, which MV3 sandbox pages cannot have, and
+ * keeping its remote runtime out of the extension package keeps the
+ * package free of remote code. Diagram text never leaves the browser.
  */
 /* global plantuml, cjCall */
 import { parseSvgResult } from './utils/PlantUMLJs';
 
-const PLANTUML_PATH = '/app/plantuml';
+// CheerpJ maps /app/ to the origin root; the site may live under a sub-path
+const PLANTUML_PATH = `/app${location.pathname.replace(/[^/]*$/, '')}plantuml`;
 
-// Forward console output and errors to the offscreen document, which
-// attaches recent lines to failed renders (the sandbox is hard to inspect)
+const isEmbedded = window.parent !== window;
+let requesterOrigin = null;
+const pendingLog = [];
+
+function send(message, origin) {
+    if (isEmbedded) window.parent.postMessage(message, origin);
+}
+
+// Forward console output and errors to the embedding page, which attaches
+// recent lines to failed renders. Held back until a requester is known.
 function trace(...parts) {
     const line = parts
         .map((p) =>
@@ -18,7 +29,8 @@ function trace(...parts) {
         )
         .join(' ')
         .slice(0, 500);
-    window.parent.postMessage({ log: line }, '*');
+    if (requesterOrigin) send({ log: line }, requesterOrigin);
+    else pendingLog.push(line);
 }
 for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
     const original = console[level].bind(console);
@@ -54,84 +66,6 @@ function traced(name) {
 traced('cheerpjInit');
 traced('cheerpjRunMain');
 
-// Network and storage diagnostics: failed requests, plus a periodic list of
-// requests still pending (a hung start-up shows up here)
-const inflight = new Map();
-let requestSeq = 0;
-function track(url, done) {
-    const key = requestSeq++;
-    inflight.set(key, { url: String(url).slice(-120), started: Date.now() });
-    return (status) => {
-        inflight.delete(key);
-        if (!done(status)) trace('[net]', status, url);
-    };
-}
-const originalFetch = window.fetch.bind(window);
-window.fetch = (input, init) => {
-    const finish = track(input?.url || input, (s) => s >= 200 && s < 400);
-    return originalFetch(input, init).then(
-        (res) => {
-            finish(res.status);
-            return res;
-        },
-        (error) => {
-            finish(`fetch error ${error?.message}`);
-            throw error;
-        }
-    );
-};
-const originalOpen = XMLHttpRequest.prototype.open;
-XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-    const finish = track(url, (s) => s >= 200 && s < 400);
-    this.addEventListener('loadend', () => finish(this.status || 'xhr error'));
-    return originalOpen.call(this, method, url, ...rest);
-};
-setInterval(() => {
-    if (!inflight.size) return;
-    const now = Date.now();
-    const oldest = [...inflight.values()]
-        .slice(0, 5)
-        .map((r) => `${r.url} (${Math.round((now - r.started) / 1000)}s)`);
-    trace(`[net] ${inflight.size} pending:`, oldest.join(', '));
-}, 10000);
-
-const OriginalWorker = window.Worker;
-window.Worker = function (url, options) {
-    trace('[env] new Worker', url);
-    try {
-        return new OriginalWorker(url, options);
-    } catch (error) {
-        trace('[env] Worker failed', error);
-        throw error;
-    }
-};
-
-function probeStorage() {
-    trace('[env] location', location.href, 'origin', String(self.origin));
-    try {
-        const req = indexedDB.open('hover-probe');
-        req.onsuccess = () => trace('[env] indexedDB ok');
-        req.onerror = () => trace('[env] indexedDB error', req.error);
-    } catch (error) {
-        trace('[env] indexedDB throws', error);
-    }
-    try {
-        caches.keys().then(
-            () => trace('[env] caches ok'),
-            (error) => trace('[env] caches error', error)
-        );
-    } catch (error) {
-        trace('[env] caches throws', error);
-    }
-    try {
-        localStorage.getItem('x');
-        trace('[env] localStorage ok');
-    } catch (error) {
-        trace('[env] localStorage throws', error);
-    }
-}
-probeStorage();
-
 let initPromise = null;
 let queue = Promise.resolve();
 
@@ -158,16 +92,25 @@ async function renderSvg(code) {
 }
 
 window.addEventListener('message', (event) => {
-    if (event.source !== window.parent) return;
+    if (!isEmbedded || event.source !== window.parent) return;
 
     const { id, code } = event.data || {};
     if (typeof id !== 'number' || typeof code !== 'string') return;
+
+    if (!requesterOrigin) {
+        requesterOrigin = event.origin;
+        pendingLog
+            .splice(0)
+            .forEach((line) => send({ log: line }, requesterOrigin));
+    }
+    const origin = event.origin;
 
     // CheerpJ is single-threaded; serialise renders
     queue = queue
         .then(() => renderSvg(code))
         .catch((error) => ({ error: error?.message || String(error) }))
-        .then((result) => window.parent.postMessage({ id, ...result }, '*'));
+        .then((result) => send({ id, ...result }, origin));
 });
 
-window.parent.postMessage({ ready: true }, '*');
+// Carries no data, so any embedder may see it
+send({ ready: true }, '*');

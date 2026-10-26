@@ -46,14 +46,10 @@ jobs:
       - name: Install browser
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Build
-        run: npm run build
+        run: npm run build && npm run build:site
       - name: Hover smoke test (server fallback)
         run: npm run test:e2e -- --channel=${{ matrix.browser }}
       - name: Hover smoke test (plantuml.js path)
         run: npm run test:e2e -- --channel=${{ matrix.browser }} --cheerpj=stub
-      - name: CheerpJ probe (diagnostic)
-        if: always()
-        continue-on-error: true
-        run: node scripts/cheerpj-probe.js --channel=${{ matrix.browser }}
       - name: Hover smoke test (real plantuml.js)
         run: npm run test:e2e -- --channel=${{ matrix.browser }} --cheerpj=real

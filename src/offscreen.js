@@ -1,25 +1,66 @@
 /**
  * Hover - Offscreen document
- * Hosts the sandboxed plantuml.js renderer once for the whole extension and
+ * Embeds the plantuml.js renderer page once for the whole extension and
  * relays render requests from the background service worker.
  */
 import { OFFSCREEN_TARGET, RENDER_ACTION } from './utils/PlantUMLJs';
 
 const RENDER_TIMEOUT = 120000; // first render downloads the CheerpJ runtime
-
+const READY_TIMEOUT = 15000; // renderer page unreachable: fail fast
 const LOG_LINES = 200;
 
 const pending = new Map();
 const log = [];
 let nextId = 0;
-let resolveReady;
-const ready = new Promise((resolve) => (resolveReady = resolve));
+let renderer = null; // { url, origin, frame, ready }
 
-const frame = document.createElement('iframe');
-frame.src = 'renderer.html';
+function failPending(error) {
+    for (const [id, entry] of pending) {
+        clearTimeout(entry.timer);
+        entry.resolve({ error, log: [...log] });
+        pending.delete(id);
+    }
+}
+
+function loadRenderer(url) {
+    if (renderer?.url === url) return renderer;
+
+    renderer?.frame.remove();
+    failPending('Renderer changed');
+    log.length = 0;
+
+    const frame = document.createElement('iframe');
+    const current = { url, origin: new URL(url).origin, frame };
+    current.ready = new Promise((resolve, reject) => {
+        current.resolveReady = resolve;
+        const fail = () => reject(new Error(`Renderer did not load: ${url}`));
+        setTimeout(fail, READY_TIMEOUT);
+        // The page posts "ready" before its load event; an error page
+        // (offline, 404) loads without it
+        frame.addEventListener('load', () => setTimeout(fail, 1000));
+    });
+    current.ready.catch(() => {
+        // Retry on the next request
+        if (renderer === current) {
+            frame.remove();
+            renderer = null;
+        }
+    });
+
+    frame.src = url;
+    document.body.appendChild(frame);
+    renderer = current;
+    return current;
+}
 
 window.addEventListener('message', (event) => {
-    if (event.source !== frame.contentWindow) return;
+    if (
+        !renderer ||
+        event.source !== renderer.frame.contentWindow ||
+        event.origin !== renderer.origin
+    ) {
+        return;
+    }
 
     const { id, ready: isReady, log: line, ...result } = event.data || {};
     if (line !== undefined) {
@@ -28,7 +69,7 @@ window.addEventListener('message', (event) => {
         return;
     }
     if (isReady) {
-        resolveReady();
+        renderer.resolveReady();
         return;
     }
 
@@ -40,10 +81,14 @@ window.addEventListener('message', (event) => {
     }
 });
 
-document.body.appendChild(frame);
+async function render(code, url) {
+    const current = loadRenderer(url);
+    try {
+        await current.ready;
+    } catch (error) {
+        return { error: error.message };
+    }
 
-async function render(code) {
-    await ready;
     const id = nextId++;
     return new Promise((resolve) => {
         const timer = setTimeout(() => {
@@ -51,7 +96,7 @@ async function render(code) {
             resolve({ error: 'plantuml.js render timed out', log: [...log] });
         }, RENDER_TIMEOUT);
         pending.set(id, { resolve, timer });
-        frame.contentWindow.postMessage({ id, code }, '*');
+        current.frame.contentWindow.postMessage({ id, code }, current.origin);
     });
 }
 
@@ -62,6 +107,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     ) {
         return false;
     }
-    render(message.code).then(sendResponse);
+    render(message.code, message.rendererUrl).then(sendResponse);
     return true;
 });
