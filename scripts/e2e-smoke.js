@@ -129,7 +129,10 @@ async function main() {
             `${ok ? 'PASS' : 'FAIL'} real plantuml.js render in ${Date.now() - started}ms - ${JSON.stringify(direct).slice(0, 200)}`
         );
         await extPage.close();
-        if (!ok) process.exit(1);
+        if (!ok) {
+            console.log(`Renderer log:\n${(direct?.log || []).join('\n')}`);
+            process.exit(1);
+        }
     }
 
     const page = await ctx.newPage();

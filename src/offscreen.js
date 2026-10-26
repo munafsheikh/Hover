@@ -7,7 +7,10 @@ import { OFFSCREEN_TARGET, RENDER_ACTION } from './utils/PlantUMLJs';
 
 const RENDER_TIMEOUT = 120000; // first render downloads the CheerpJ runtime
 
+const LOG_LINES = 60;
+
 const pending = new Map();
+const log = [];
 let nextId = 0;
 let resolveReady;
 const ready = new Promise((resolve) => (resolveReady = resolve));
@@ -18,7 +21,12 @@ frame.src = 'renderer.html';
 window.addEventListener('message', (event) => {
     if (event.source !== frame.contentWindow) return;
 
-    const { id, ready: isReady, ...result } = event.data || {};
+    const { id, ready: isReady, log: line, ...result } = event.data || {};
+    if (line !== undefined) {
+        log.push(line);
+        if (log.length > LOG_LINES) log.shift();
+        return;
+    }
     if (isReady) {
         resolveReady();
         return;
@@ -28,7 +36,7 @@ window.addEventListener('message', (event) => {
     if (entry) {
         pending.delete(id);
         clearTimeout(entry.timer);
-        entry.resolve(result);
+        entry.resolve(result.error ? { ...result, log: [...log] } : result);
     }
 });
 
@@ -40,7 +48,7 @@ async function render(code) {
     return new Promise((resolve) => {
         const timer = setTimeout(() => {
             pending.delete(id);
-            resolve({ error: 'plantuml.js render timed out' });
+            resolve({ error: 'plantuml.js render timed out', log: [...log] });
         }, RENDER_TIMEOUT);
         pending.set(id, { resolve, timer });
         frame.contentWindow.postMessage({ id, code }, '*');
