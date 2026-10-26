@@ -54,6 +54,73 @@ function traced(name) {
 traced('cheerpjInit');
 traced('cheerpjRunMain');
 
+// Network and storage diagnostics: failed requests, plus a periodic list of
+// requests still pending (a hung start-up shows up here)
+const inflight = new Map();
+let requestSeq = 0;
+function track(url, done) {
+    const key = requestSeq++;
+    inflight.set(key, { url: String(url).slice(-120), started: Date.now() });
+    return (status) => {
+        inflight.delete(key);
+        if (!done(status)) trace('[net]', status, url);
+    };
+}
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+    const finish = track(input?.url || input, (s) => s >= 200 && s < 400);
+    return originalFetch(input, init).then(
+        (res) => {
+            finish(res.status);
+            return res;
+        },
+        (error) => {
+            finish(`fetch error ${error?.message}`);
+            throw error;
+        }
+    );
+};
+const originalOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+    const finish = track(url, (s) => s >= 200 && s < 400);
+    this.addEventListener('loadend', () => finish(this.status || 'xhr error'));
+    return originalOpen.call(this, method, url, ...rest);
+};
+setInterval(() => {
+    if (!inflight.size) return;
+    const now = Date.now();
+    const oldest = [...inflight.values()]
+        .slice(0, 5)
+        .map((r) => `${r.url} (${Math.round((now - r.started) / 1000)}s)`);
+    trace(`[net] ${inflight.size} pending:`, oldest.join(', '));
+}, 10000);
+
+function probeStorage() {
+    trace('[env] location', location.href, 'origin', String(self.origin));
+    try {
+        const req = indexedDB.open('hover-probe');
+        req.onsuccess = () => trace('[env] indexedDB ok');
+        req.onerror = () => trace('[env] indexedDB error', req.error);
+    } catch (error) {
+        trace('[env] indexedDB throws', error);
+    }
+    try {
+        caches.keys().then(
+            () => trace('[env] caches ok'),
+            (error) => trace('[env] caches error', error)
+        );
+    } catch (error) {
+        trace('[env] caches throws', error);
+    }
+    try {
+        localStorage.getItem('x');
+        trace('[env] localStorage ok');
+    } catch (error) {
+        trace('[env] localStorage throws', error);
+    }
+}
+probeStorage();
+
 let initPromise = null;
 let queue = Promise.resolve();
 

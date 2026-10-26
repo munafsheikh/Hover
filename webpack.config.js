@@ -10,6 +10,7 @@ module.exports = {
         options: './src/options.js',
         offscreen: './src/offscreen.js',
         renderer: './src/renderer.js',
+        'sandbox-shims': './src/sandbox-shims.js',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),

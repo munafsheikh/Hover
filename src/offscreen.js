@@ -7,7 +7,7 @@ import { OFFSCREEN_TARGET, RENDER_ACTION } from './utils/PlantUMLJs';
 
 const RENDER_TIMEOUT = 120000; // first render downloads the CheerpJ runtime
 
-const LOG_LINES = 60;
+const LOG_LINES = 200;
 
 const pending = new Map();
 const log = [];
