@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
  * Loads the built extension in Chromium and exercises hover rendering
- * against test/e2e.html. Network is stubbed: the PlantUML server is
- * intercepted, and with --stub-cheerpj the CheerpJ CDN is replaced by a
- * local fake so the plantuml.js path can be exercised offline.
+ * against test/e2e.html. The PlantUML server is always stubbed.
  *
- * Usage: node scripts/e2e-smoke.js [distDir] [--stub-cheerpj] [--executable=<path>]
- *   [--channel=<name>]
+ * Usage: node scripts/e2e-smoke.js [distDir] [--cheerpj=offline|stub|real]
+ *   [--channel=<name>] [--executable=<path>]
+ *   --cheerpj: how the CheerpJ CDN behaves (default offline)
+ *       offline  unreachable: plantuml.js fails, server fallback is used
+ *       stub     local fake runtime: exercises the plantuml.js message path
+ *       real     the real CDN (needs network): renders with real plantuml.js
+ *     --stub-cheerpj is an alias for --cheerpj=stub
  *   --channel: Playwright browser channel, e.g. msedge or chrome
  *   --executable: path to another Chromium-based browser, e.g.
  *                 /opt/microsoft/msedge/msedge
@@ -21,7 +24,16 @@ const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
-const stubCheerpj = args.includes('--stub-cheerpj');
+const cheerpj = args.includes('--stub-cheerpj')
+    ? 'stub'
+    : args
+          .find((a) => a.startsWith('--cheerpj='))
+          ?.slice('--cheerpj='.length) || 'offline';
+if (!['offline', 'stub', 'real'].includes(cheerpj)) {
+    throw new Error(`Unknown --cheerpj mode: ${cheerpj}`);
+}
+// The real runtime downloads a JVM on first use
+const RENDER_TIMEOUT = cheerpj === 'real' ? 180000 : 20000;
 const executable = args
     .find((a) => a.startsWith('--executable='))
     ?.slice('--executable='.length);
@@ -51,18 +63,15 @@ function serve(handler) {
 }
 
 function prepareExtension(port) {
-    if (!stubCheerpj) return distDir;
+    if (cheerpj === 'real') return distDir;
+    // offline: a closed local port so the loader fails fast
+    const host =
+        cheerpj === 'stub' ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:9';
     const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'hover-ext-'));
     fs.cpSync(distDir, copy, { recursive: true });
     for (const file of ['renderer.html', 'manifest.json']) {
         const p = path.join(copy, file);
-        fs.writeFileSync(
-            p,
-            fs
-                .readFileSync(p, 'utf8')
-                .split(CDN)
-                .join(`http://127.0.0.1:${port}`)
-        );
+        fs.writeFileSync(p, fs.readFileSync(p, 'utf8').split(CDN).join(host));
     }
     return copy;
 }
@@ -86,7 +95,7 @@ async function main() {
         args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`]
     });
     console.log(
-        `Browser: ${ctx.browser()?.version() || executable || channel}`
+        `Browser: ${ctx.browser()?.version() || executable || channel}, cheerpj: ${cheerpj}`
     );
 
     const serverHits = [];
@@ -98,6 +107,30 @@ async function main() {
             headers: { 'access-control-allow-origin': '*' }
         });
     });
+
+    if (cheerpj === 'real') {
+        // Render directly through the extension first, to surface runtime errors
+        const sw =
+            ctx.serviceWorkers()[0] ||
+            (await ctx.waitForEvent('serviceworker'));
+        const extPage = await ctx.newPage();
+        await extPage.goto(
+            `${sw.url().split('/').slice(0, 3).join('/')}/options.html`
+        );
+        const started = Date.now();
+        const direct = await extPage.evaluate(() =>
+            chrome.runtime.sendMessage({
+                action: 'renderPlantUML',
+                code: '@startuml\nAlice -> Bob : hello\n@enduml'
+            })
+        );
+        const ok = direct?.svg?.includes('<svg');
+        console.log(
+            `${ok ? 'PASS' : 'FAIL'} real plantuml.js render in ${Date.now() - started}ms - ${JSON.stringify(direct).slice(0, 200)}`
+        );
+        await extPage.close();
+        if (!ok) process.exit(1);
+    }
 
     const page = await ctx.newPage();
     const logs = [];
@@ -148,7 +181,9 @@ async function main() {
             : src;
     const waitForDiagram = () =>
         page
-            .waitForSelector('.hover-extension-diagram', { timeout: 20000 })
+            .waitForSelector('.hover-extension-diagram', {
+                timeout: RENDER_TIMEOUT
+            })
             .then(
                 () => true,
                 () => false
@@ -163,10 +198,16 @@ async function main() {
         first.length === 1 && first[0].includes('<svg'),
         first[0]?.slice(0, 80)
     );
-    if (stubCheerpj) {
+    if (cheerpj === 'stub') {
         await check(
             'rendered locally with plantuml.js',
             first[0]?.includes('local:'),
+            `server hits=${serverHits.length}`
+        );
+    } else if (cheerpj === 'real') {
+        await check(
+            'rendered locally with real plantuml.js',
+            serverHits.length === 0 && !first[0]?.includes('server'),
             `server hits=${serverHits.length}`
         );
     } else {
@@ -190,7 +231,7 @@ async function main() {
                     .querySelector('.hover-extension-content pre')
                     ?.textContent.includes('mindmap'),
             null,
-            { timeout: 20000 }
+            { timeout: RENDER_TIMEOUT }
         )
         .catch(() => {});
     const second = await page
@@ -222,7 +263,7 @@ async function main() {
                     .querySelector('.hover-extension-content pre')
                     ?.textContent.includes('@startjson'),
             null,
-            { timeout: 20000 }
+            { timeout: RENDER_TIMEOUT }
         )
         .catch(() => {});
     await check('JSON block renders', (await diagramSrcs()).length === 1);
