@@ -27,3 +27,29 @@ jobs:
         with:
           name: hover-extension-dist
           path: dist/**
+
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, msedge]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build
+        run: npm run build && npm run build:site
+      - name: Hover smoke test (server fallback)
+        run: npm run test:e2e -- --channel=${{ matrix.browser }}
+      - name: Hover smoke test (plantuml.js path)
+        run: npm run test:e2e -- --channel=${{ matrix.browser }} --cheerpj=stub
+      - name: Hover smoke test (real plantuml.js)
+        run: npm run test:e2e -- --channel=${{ matrix.browser }} --cheerpj=real

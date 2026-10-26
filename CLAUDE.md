@@ -35,9 +35,9 @@ npm run version          # Update version in manifest.json
 
 ## Code Architecture
 
-### Entry Points (4 independent bundles)
+### Entry Points (5 extension bundles + renderer site)
 
-Webpack bundles four separate entry points defined in `webpack.config.js`:
+Webpack bundles five extension entry points defined in `webpack.config.js`; `webpack.site.config.js` builds the renderer site:
 
 1. **background.js** - Service worker (Manifest V3)
    - Manages extension lifecycle (install, update)
@@ -47,10 +47,11 @@ Webpack bundles four separate entry points defined in `webpack.config.js`:
 
 2. **content.js** - Content script injected into all web pages
    - Main orchestrator with singleton Logger instance
-   - Detects code blocks on hover
-   - Renders PlantUML diagrams via PlantUML server
-   - Manages popup display and diagram caching (24-hour TTL)
-   - Uses ContentHandlerRegistry for extensibility
+   - Detects code blocks on hover (`pre`, `code`, `textarea`, handler classes, custom trigger selector)
+   - Renders PlantUML via plantuml.js (fallback: PlantUML server), SVG inline
+   - Manages popup display (`src/ui/Popup.js`) and diagram caching (24-hour TTL)
+   - Uses ContentHandlerRegistry with handlers in `src/handlers/` (PlantUML, SVG, JSON)
+   - Hover timing via `src/utils/HoverDebouncer.js` (see Debouncing below)
 
 3. **popup.js** - Extension popup UI controller
    - Basic settings: enable/disable, toggle PlantUML/SVG, debounce time
@@ -59,6 +60,15 @@ Webpack bundles four separate entry points defined in `webpack.config.js`:
 4. **options.js** - Advanced options page controller
    - Custom CSS, code selectors, PlantUML server URL
    - Future: Custom API and ChatGPT integration settings
+
+5. **offscreen.js** - Offscreen document (`offscreen.html`, reason `IFRAME_SCRIPTING`)
+   - Created on demand by background.js; one per extension (offscreen docs only get `chrome.runtime`, so the renderer URL arrives with each request)
+   - Embeds the renderer page in an iframe and relays render requests via `postMessage` (origin-checked); fails fast if the page doesn't post `ready`
+
+6. **renderer.js** - plantuml.js renderer page (`site-src/index.html` → `site/renderer/`, `npm run build:site`)
+   - Static site deployed to GitHub Pages by `.github/workflows/pages.yml`; default URL `https://munafsheikh.github.io/Hover/renderer/` (`DEFAULT_RENDERER_URL`, overridable in options)
+   - Loads CheerpJ 2.3 from `cjrtnc.leaningtech.com` and plantuml.js from the site; calls `com.plantuml.wasm.v1.Svg.convert`, returns SVG
+   - Why hosted: CheerpJ hangs in an opaque origin, and MV3 sandbox pages can't have `allow-same-origin`; hosting also keeps remote code out of the extension package. Diagram text stays in the browser.
 
 ### Key Components
 
@@ -70,7 +80,7 @@ Registry + Strategy pattern for managing different content type handlers (PlantU
 - `getHandler(content)`: Match content to appropriate handler
 - `getAllClassIdentifiers()`: Get CSS classes for detection
 
-**Note**: References a missing `BaseContentHandler` class - this is incomplete architecture for future extensibility.
+Handlers extend `src/handlers/BaseContentHandler.js` and implement `canHandle`, `getClassIdentifiers`, `toBlocks` (returns `{kind: 'plantuml'|'svg', code}`); `settingKey` names the settings flag that enables them.
 
 #### Singleton Logger
 **Location**: `src/utils/Logger.js`
@@ -90,6 +100,12 @@ Pattern detection utility for code blocks:
 **Tests**: `src/utils/StringMatcher.test.js` (Jest)
 
 ### Extension Communication Flow
+
+Default engine (`advancedSettings.plantuml.engine = 'plantumljs'`):
+```
+content.js --renderPlantUML--> background.js --> offscreen.js --postMessage--> renderer page iframe (plantuml.js/CheerpJ)
+```
+On failure, falls back to the server flow below unless `fallbackToServer` is false.
 
 ```
 Web Page
@@ -158,7 +174,8 @@ npm test -- StringMatcher    # Run specific test file
 ### Test Structure
 - Unit tests located alongside source files: `*.test.js`
 - Jest configuration via `babel.config.js`
-- Current coverage: StringMatcher utility
+- Current coverage: StringMatcher, handlers, HoverDebouncer, PlantUMLJs helpers
+- Browser smoke test: `npm run build && npm run build:site && npm run test:e2e -- [--cheerpj=offline|stub|real] [--channel=msedge] [--renderer-url=<url>]` loads `dist/` in Chromium/Edge and hovers `test/e2e.html`. The PlantUML server is stubbed and `site/` is served locally: `offline` = renderer unreachable (server fallback), `stub` = fake CheerpJ, `real` = real CheerpJ CDN (network). CI runs all three on Chromium and Edge
 
 ### Writing New Tests
 Follow Jest conventions:
@@ -226,6 +243,7 @@ dist/
 ### Static Assets
 - **icons/**: SVG source + generated PNG (16x16, 48x48, 128x128)
 - **lib/plantuml-encoder.min.js**: DEFLATE-based PlantUML text encoder
+- **site/renderer/plantuml/** (renderer site, not the extension): copied at build time from `@sakirtemel/plantuml.js` (plantuml.js, plantuml-core.jar(.js), themes). `stdlib` (~166MB) is not shipped, so `!include <...>` stdlib diagrams fall back to the server
 
 ## Code Patterns and Conventions
 
@@ -254,14 +272,13 @@ logger.info('Message');
 
 ## Important Notes
 
-- **Missing BaseContentHandler**: The ContentHandlerRegistry references a non-existent base class at `../handlers/BaseContentHandler.js` - this is incomplete architecture for future handler implementations
 - **PlantUML Server**:
   - Default uses public server (https://www.plantuml.com/plantuml)
   - Configurable in extension options under "PlantUML" tab
   - Supports local servers for privacy/performance (see LOCAL_PLANTUML_SETUP.md)
   - Format can be changed between SVG and PNG
 - **Settings Management**: Extension loads settings from `chrome.storage.sync` on initialization and updates when changed
-- **Debouncing**: 15-second default debounce prevents excessive API calls
+- **Debouncing** (`HoverDebouncer`): a block renders after a 250ms hover intent (leaving earlier cancels); the visible block is never re-rendered by repeated mouseovers; a dismissed block stays closed for `settings.debounceTime` (default 15s). Other blocks are never blocked.
 - **Future Extensibility**: Architecture designed to support ChatGPT integration and custom APIs (v2.0)
 
 ## Chrome Extension CSP Considerations

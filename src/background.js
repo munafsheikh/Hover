@@ -2,6 +2,7 @@
  * Hover - Background Script
  * Handles extension events and manages extension state
  */
+import { OFFSCREEN_TARGET, RENDER_ACTION } from './utils/PlantUMLJs';
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -20,8 +21,46 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
     }
 });
 
+let creatingOffscreen = null;
+
+// Single offscreen document hosting the plantuml.js renderer page
+async function ensureOffscreenDocument() {
+    if (await chrome.offscreen.hasDocument()) return;
+    if (!creatingOffscreen) {
+        creatingOffscreen = chrome.offscreen
+            .createDocument({
+                url: 'offscreen.html',
+                reasons: ['IFRAME_SCRIPTING'],
+                justification:
+                    'Render PlantUML diagrams locally with plantuml.js'
+            })
+            .finally(() => {
+                creatingOffscreen = null;
+            });
+    }
+    await creatingOffscreen;
+}
+
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (
+        message.action === RENDER_ACTION &&
+        message.target !== OFFSCREEN_TARGET
+    ) {
+        ensureOffscreenDocument()
+            .then(() =>
+                chrome.runtime.sendMessage({
+                    target: OFFSCREEN_TARGET,
+                    action: RENDER_ACTION,
+                    code: message.code,
+                    rendererUrl: message.rendererUrl
+                })
+            )
+            .then(sendResponse)
+            .catch((error) => sendResponse({ error: error.message }));
+        return true;
+    }
+
     if (message.action === 'getSettings') {
         chrome.storage.sync.get('settings', (data) => {
             sendResponse({ settings: data.settings || DEFAULT_SETTINGS });

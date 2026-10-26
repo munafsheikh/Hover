@@ -147,6 +147,25 @@
       <div id="plantuml" class="tab-content">
         <div class="card">
           <h2>PlantUML Settings</h2>
+          <label for="plantUmlEngine">Rendering Engine</label>
+          <select id="plantUmlEngine">
+            <option value="plantumljs">plantuml.js (in-browser, no server)</option>
+            <option value="server">PlantUML Server</option>
+          </select>
+
+          <label for="plantUmlRendererUrl">plantuml.js Renderer Page</label>
+          <input
+            type="url"
+            id="plantUmlRendererUrl"
+            value="https://munafsheikh.github.io/Hover/renderer/"
+            placeholder="https://munafsheikh.github.io/Hover/renderer/"
+          />
+
+          <label>
+            <input type="checkbox" id="plantUmlFallback" checked />
+            Fall back to the server if plantuml.js fails
+          </label>
+
           <label for="plantUmlServer">PlantUML Server URL</label>
           <input
             type="url"

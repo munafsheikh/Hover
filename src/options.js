@@ -2,6 +2,7 @@
  * Hover - Options Script
  * Manages the extension options page and advanced settings
  */
+import { DEFAULT_RENDERER_URL } from './utils/PlantUMLJs';
 
 // DOM Elements - General
 const customCSSTextarea = document.getElementById('customCSS');
@@ -12,6 +13,9 @@ const popupHeightInput = document.getElementById('popupHeight');
 // DOM Elements - PlantUML
 const plantUmlServerInput = document.getElementById('plantUmlServer');
 const plantUmlFormatSelect = document.getElementById('plantUmlFormat');
+const plantUmlEngineSelect = document.getElementById('plantUmlEngine');
+const plantUmlFallbackCheckbox = document.getElementById('plantUmlFallback');
+const plantUmlRendererUrlInput = document.getElementById('plantUmlRendererUrl');
 
 // DOM Elements - ChatGPT (disabled in version 1)
 // const openaiApiKeyInput = document.getElementById('openaiApiKey');
@@ -44,6 +48,9 @@ const DEFAULT_ADVANCED_SETTINGS = {
         popupHeight: 400
     },
     plantuml: {
+        engine: 'plantumljs', // 'plantumljs' (in-browser) or 'server'
+        fallbackToServer: true,
+        rendererUrl: DEFAULT_RENDERER_URL,
         server: 'https://www.plantuml.com/plantuml',
         format: 'svg'
     },
@@ -88,6 +95,14 @@ function initOptions() {
         plantUmlFormatSelect.value =
             advancedSettings.plantuml.format ||
             DEFAULT_ADVANCED_SETTINGS.plantuml.format;
+        plantUmlEngineSelect.value =
+            advancedSettings.plantuml.engine ||
+            DEFAULT_ADVANCED_SETTINGS.plantuml.engine;
+        plantUmlFallbackCheckbox.checked =
+            advancedSettings.plantuml.fallbackToServer !== false;
+        plantUmlRendererUrlInput.value =
+            advancedSettings.plantuml.rendererUrl ||
+            DEFAULT_ADVANCED_SETTINGS.plantuml.rendererUrl;
 
         // Fill ChatGPT settings (disabled in version 1)
         // openaiApiKeyInput.value = advancedSettings.chatgpt.apiKey || '';
@@ -131,7 +146,10 @@ function saveAdvancedSettings() {
                 },
                 plantuml: {
                     server: plantUmlServerInput.value,
-                    format: plantUmlFormatSelect.value
+                    format: plantUmlFormatSelect.value,
+                    engine: plantUmlEngineSelect.value,
+                    fallbackToServer: plantUmlFallbackCheckbox.checked,
+                    rendererUrl: plantUmlRendererUrlInput.value
                 },
                 chatgpt: {
                     apiKey: '', // Disabled in version 1

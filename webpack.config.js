@@ -8,10 +8,12 @@ module.exports = {
         content: './src/content.js',
         popup: './src/popup.js',
         options: './src/options.js',
+        offscreen: './src/offscreen.js',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].js',
+        clean: true,
     },
     devtool: 'cheap-module-source-map',
     module: {
@@ -38,6 +40,7 @@ module.exports = {
                 { from: 'popup.html', to: 'popup.html' },
                 { from: 'options.html', to: 'options.html' },
                 { from: 'icons', to: 'icons' },
+                { from: 'offscreen.html', to: 'offscreen.html' },
                 { from: 'lib', to: 'lib' },
             ],
         }),
