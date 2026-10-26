@@ -12,7 +12,7 @@ A Chrome extension that provides render-on-hover functionality for image-as-code
 ### Version 1
 
 - Auto-renders PlantUML and SVG diagrams when hovering over code blocks
-- Uses the PlantUML server for rendering PlantUML diagrams
+- Renders PlantUML in-browser with [plantuml.js](https://github.com/plantuml/plantuml.js) by default, falling back to the PlantUML server
 - Directly renders SVG code
 
 Usage
@@ -68,6 +68,7 @@ For advanced settings, click on "Advanced Options" to configure:
 
 - Custom CSS for the popup
 - Customize selectors for code detection
+- Choose rendering engine: plantuml.js (in-browser) or PlantUML server, with optional server fallback
 - Configure PlantUML server URL (supports local servers)
 - Set up custom API parameters (coming in future versions)
 - Configure ChatGPT integration (coming in future versions)

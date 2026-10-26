@@ -1,5 +1,10 @@
 import { Logger } from './utils/Logger';
 import { StringMatcher } from './utils/StringMatcher';
+import {
+    ENGINE_PLANTUML_JS,
+    RENDER_ACTION,
+    svgToDataUrl
+} from './utils/PlantUMLJs';
 
 class ContentScript {
     logger;
@@ -30,15 +35,62 @@ class ContentScript {
     }
 
     /**
-     * Retrieve a diagram image for the given encoded UML. Uses an in-memory
-     * cache to avoid repeated network requests to the PlantUML server.
+     * Retrieve a diagram image for the given UML. Renders locally with
+     * plantuml.js by default, falling back to the PlantUML server. Uses an
+     * in-memory cache keyed by encoded UML to avoid repeated renders.
      */
-    async getDiagramDataUrl(encodedText) {
+    async getDiagramDataUrl(encodedText, code) {
         const cached = ContentScript.diagramCache.get(encodedText);
         if (cached && Date.now() - cached.timestamp < ContentScript.CACHE_TTL) {
             return cached.dataUrl;
         }
 
+        const plantumlSettings = this.advancedSettings?.plantuml || {};
+        const engine = plantumlSettings.engine || ENGINE_PLANTUML_JS;
+        let dataUrl = null;
+
+        if (engine === ENGINE_PLANTUML_JS && code) {
+            try {
+                dataUrl = await this.renderWithPlantUMLJs(code);
+            } catch (error) {
+                if (plantumlSettings.fallbackToServer === false) {
+                    throw error;
+                }
+                this.logger.warn(
+                    'plantuml.js render failed, falling back to server:',
+                    error.message
+                );
+            }
+        }
+
+        if (!dataUrl) {
+            dataUrl = await this.fetchFromServer(encodedText);
+        }
+
+        ContentScript.diagramCache.set(encodedText, {
+            dataUrl,
+            timestamp: Date.now()
+        });
+
+        return dataUrl;
+    }
+
+    /**
+     * Render via the extension's offscreen plantuml.js renderer.
+     */
+    async renderWithPlantUMLJs(code) {
+        this.logger.debug('Rendering diagram with plantuml.js');
+        const response = await chrome.runtime.sendMessage({
+            action: RENDER_ACTION,
+            code
+        });
+        if (!response?.svg) {
+            throw new Error(response?.error || 'No response from renderer');
+        }
+        return svgToDataUrl(response.svg);
+    }
+
+    async fetchFromServer(encodedText) {
         // Get PlantUML server URL and format from settings
         const serverUrl =
             this.advancedSettings?.plantuml?.server ||
@@ -55,19 +107,12 @@ class ContentScript {
         }
 
         const blob = await response.blob();
-        const dataUrl = await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result);
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
-
-        ContentScript.diagramCache.set(encodedText, {
-            dataUrl,
-            timestamp: Date.now()
-        });
-
-        return dataUrl;
     }
 
     async loadPlantUMLEncoder(doc, lib) {
@@ -273,7 +318,10 @@ class ContentScript {
                     margin-bottom: 30px;
                 `;
 
-                const imgSrc = await this.getDiagramDataUrl(block.encodedText);
+                const imgSrc = await this.getDiagramDataUrl(
+                    block.encodedText,
+                    block.code
+                );
                 this.logger.debug(
                     'Using diagram source:',
                     imgSrc.substring(0, 50)

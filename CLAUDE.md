@@ -35,9 +35,9 @@ npm run version          # Update version in manifest.json
 
 ## Code Architecture
 
-### Entry Points (4 independent bundles)
+### Entry Points (6 independent bundles)
 
-Webpack bundles four separate entry points defined in `webpack.config.js`:
+Webpack bundles six separate entry points defined in `webpack.config.js`:
 
 1. **background.js** - Service worker (Manifest V3)
    - Manages extension lifecycle (install, update)
@@ -59,6 +59,14 @@ Webpack bundles four separate entry points defined in `webpack.config.js`:
 4. **options.js** - Advanced options page controller
    - Custom CSS, code selectors, PlantUML server URL
    - Future: Custom API and ChatGPT integration settings
+
+5. **offscreen.js** - Offscreen document (`offscreen.html`, reason `IFRAME_SCRIPTING`)
+   - Created on demand by background.js; one per extension
+   - Hosts the sandboxed renderer iframe and relays render requests
+
+6. **renderer.js** - Sandboxed page (`renderer.html`) running plantuml.js
+   - Loads the CheerpJ 2.3 runtime from `cjrtnc.leaningtech.com` (allowed only by the sandbox CSP in manifest.json)
+   - Calls `com.plantuml.wasm.v1.Svg.convert` and returns SVG markup
 
 ### Key Components
 
@@ -90,6 +98,12 @@ Pattern detection utility for code blocks:
 **Tests**: `src/utils/StringMatcher.test.js` (Jest)
 
 ### Extension Communication Flow
+
+Default engine (`advancedSettings.plantuml.engine = 'plantumljs'`):
+```
+content.js --renderPlantUML--> background.js --> offscreen.js --postMessage--> renderer.js (plantuml.js/CheerpJ)
+```
+On failure, falls back to the server flow below unless `fallbackToServer` is false.
 
 ```
 Web Page
@@ -226,6 +240,7 @@ dist/
 ### Static Assets
 - **icons/**: SVG source + generated PNG (16x16, 48x48, 128x128)
 - **lib/plantuml-encoder.min.js**: DEFLATE-based PlantUML text encoder
+- **plantuml/**: copied at build time from `@sakirtemel/plantuml.js` (plantuml.js, plantuml-core.jar(.js), themes). `stdlib` (~166MB) is not shipped, so `!include <...>` stdlib diagrams fall back to the server
 
 ## Code Patterns and Conventions
 
